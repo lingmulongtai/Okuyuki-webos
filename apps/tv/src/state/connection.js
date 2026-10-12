@@ -11,20 +11,27 @@ const RENEW_BEFORE_MS = 10 * 60 * 1000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const MESSAGES = {
-	unreachable: 'スマホに接続できません。スマホの Okuyuki で「テレビで見る」がオンになっていて、同じ Wi-Fi にあるかを確かめてください。',
-	outdated: 'スマホの Okuyuki がテレビ表示に対応していません。スマホのアプリを最新版にしてください。',
-	unreadable: 'スマホの応答を読み取れませんでした。テレビとスマホの Okuyuki を最新版にしてください。',
-	rejected: 'スマホで接続が拒否されました。',
-	expired: '時間内に許可されませんでした。もう一度試してください。',
-	closed: 'スマホで接続がオフになりました。スマホで「テレビで見る」を押すと再開します。'
+	unreachable: 'スマホにつながりませんでした。スマホの「接続を待つ」がオンで、テレビと同じネットワークにあるか確かめてください。',
+	outdated: 'スマホの Okuyuki がテレビに対応していません。スマホのアプリを最新にしてください。',
+	unreadable: 'スマホの応答を読み取れませんでした。テレビとスマホの Okuyuki を、どちらも最新にしてください。',
+	rejected: 'スマホで拒否されました。つなぐときは、スマホで「許可する」を押してください。',
+	expired: '時間内に許可されませんでした。もう一度つないで、スマホで「許可する」を押してください。',
+	closed: 'スマホで接続がオフになりました。スマホの「接続を待つ」をオンにすると、またつなげます。'
 };
+
+/** The text as a sentence of the app's: ending in "。" unless it already ends in punctuation. */
+export function sentence (text) {
+	const trimmed = text.trim();
+	return !trimmed || /[。．.！!？?…]$/.test(trimmed) ? trimmed : trimmed + '。';
+}
 
 export function describeError (error) {
 	if (error instanceof ProtocolError) return MESSAGES.unreadable;
 	if (error instanceof HostError) {
 		if (error.status === 0) return MESSAGES.unreachable;
-		if (error.message && !/^HTTP \d+$/.test(error.message)) return error.message;
-		return MESSAGES.unreachable;
+		// The phone explains its refusals in Japanese; anything else is the TV's own wording.
+		if (/[\u3000-\u9fff]/.test(error.message)) return sentence(error.message);
+		return 'スマホが応答できませんでした（' + error.status + '）。';
 	}
 	return MESSAGES.unreadable;
 }
