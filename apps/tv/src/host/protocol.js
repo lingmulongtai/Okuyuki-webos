@@ -2,6 +2,8 @@
 // so the views can trust the objects they receive.
 
 export const PROTOCOL_VERSION = 2;
+// The port the phone listens on unless another app has taken it.
+export const DEFAULT_PORT = 38765;
 export const FILTERS = ['all', 'photo', 'video', 'stereo'];
 export const HDR_KINDS = ['none', 'ultrahdr', 'hdr10', 'hlg', 'hdr10plus'];
 export const PAIR_STATES = ['pending', 'approved', 'rejected', 'expired'];

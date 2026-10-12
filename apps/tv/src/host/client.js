@@ -1,6 +1,7 @@
 // HTTP client for one phone host. Photos and videos never pass through here: views load them
 // straight into <img> and <video> from the URLs this client builds.
 import {
+	DEFAULT_PORT,
 	parseHello,
 	parseItem,
 	parseLibraryPage,
@@ -23,13 +24,25 @@ export function formatHost (host) {
 	return host.indexOf(':') >= 0 && host[0] !== '[' ? '[' + host + ']' : host;
 }
 
-/** Parses "192.168.1.23:38765" (what the phone shows) into `{host, port}`, or null. */
+/**
+ * Reads an address the way the phone shows it ("192.168.1.23:38765") into `{host, port}`, or null.
+ * The port may be left out when the phone uses its usual one, "http://" and a final "/" are
+ * ignored, and full-width digits and "。" from a Japanese keyboard are accepted.
+ */
 export function parseAddress (text) {
-	const match = /^\s*(\[[0-9a-fA-F:]+\]|[A-Za-z0-9.-]+)\s*:\s*(\d{1,5})\s*$/.exec(text || '');
+	const plain = String(text || '').normalize('NFKC').replace(/。/g, '.').trim()
+		.replace(/^http:\/\//i, '').replace(/\/$/, '');
+	const match = /^(\[[0-9a-fA-F:]+\]|[A-Za-z0-9.-]+)(?:\s*:\s*(\d{1,5}))?$/.exec(plain);
 	if (!match) return null;
-	const port = Number(match[2]);
+	const host = match[1].replace(/^\[|\]$/g, '');
+	// Digits and dots can only be an IPv4 address, and then a complete one.
+	if (/^[\d.]+$/.test(host)) {
+		const octets = host.split('.');
+		if (octets.length !== 4 || octets.some((octet) => octet === '' || Number(octet) > 255)) return null;
+	}
+	const port = match[2] ? Number(match[2]) : DEFAULT_PORT;
 	if (port < 1 || port > 65535) return null;
-	return {host: match[1].replace(/^\[|\]$/g, ''), port};
+	return {host, port};
 }
 
 async function request (url, {method = 'GET', headers, body, timeout = TIMEOUT_MS} = {}) {

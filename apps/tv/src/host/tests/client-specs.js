@@ -17,8 +17,14 @@ describe('parseAddress', () => {
 		expect(parseAddress('[fe80::1]:38765')).toEqual({host: 'fe80::1', port: 38765});
 	});
 
+	test('fills in the usual port and forgives what a Japanese keyboard types', () => {
+		expect(parseAddress('192.168.1.23')).toEqual({host: '192.168.1.23', port: 38765});
+		expect(parseAddress('１９２。１６８。１。２３：３８７６５')).toEqual({host: '192.168.1.23', port: 38765});
+		expect(parseAddress('http://192.168.1.23:38765/')).toEqual({host: '192.168.1.23', port: 38765});
+	});
+
 	test('refuses anything else', () => {
-		['', '192.168.1.23', '192.168.1.23:0', '192.168.1.23:70000', 'http://192.168.1.23:38765', 'a b:1'].forEach((text) => {
+		['', '192.168.1', '192.168.1.256', '192.168..23', '192.168.1.23:0', '192.168.1.23:70000', 'a b:1', ':38765'].forEach((text) => {
 			expect(parseAddress(text)).toBeNull();
 		});
 	});
