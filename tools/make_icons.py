@@ -32,10 +32,11 @@ def test_icon(size, text, accent):
 
 
 def draw_mark(image, left, top, size, background):
-    """The mark in a `size` square at (left, top): back square, front square, then the overlap."""
-    side = size * 34 / 46
-    offset = size * 12 / 46
-    radius = size * 5.4 / 46
+    """The mark in a `size` square at (left, top): back square, front square, then the overlap.
+    Same proportions as Brand.js and the phone's BrandMark."""
+    side = size * 0.64
+    offset = size - side
+    radius = side * 0.16
 
     def square(x, y):
         mask = Image.new("L", image.size, 0)
