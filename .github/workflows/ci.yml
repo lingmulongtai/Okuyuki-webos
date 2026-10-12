@@ -38,7 +38,7 @@ jobs:
         run: npm run still4k:assets
       - run: npm run check
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - run: npm run test:still4k
       - run: npm run still4k:package
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -49,6 +49,44 @@ jobs:
         if: always()
         with:
           name: browser-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+  tv:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/tv/package-lock.json
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: npm ci
+      - run: npm run tv:install
+      - run: npm run check
+      - run: npm run tv:lint
+      - run: npm run tv:test
+      - run: npm run tv:build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:tv
+      - run: npm run tv:package
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: okuyuki-tv-ipk
+          path: dist/com.okuyuki.tv_*.ipk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: tv-browser-report
           path: |
             playwright-report/
             test-results/

@@ -1,0 +1,215 @@
+@import '../components/theme.less';
+
+// The intro on the left says what to do on the phone; the right column shows where that stands.
+.view {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 1620px;
+	grid-template-rows: auto minmax(0, 1fr);
+	column-gap: 180px;
+	box-sizing: border-box;
+	padding: @ok-margin-y @ok-margin-x;
+	color: @ok-text;
+	// A faint glow of the mark's two colors in opposite corners.
+	background:
+		radial-gradient(ellipse 60% 70% at 0% 0%, rgba(39, 71, 230, 0.16), rgba(39, 71, 230, 0) 70%),
+		radial-gradient(ellipse 50% 60% at 100% 100%, rgba(232, 96, 63, 0.08), rgba(232, 96, 63, 0) 70%),
+		@ok-ink;
+}
+
+.header {
+	grid-column: 1 / -1;
+}
+
+.intro {
+	align-self: center;
+	padding-bottom: 48px;
+}
+
+.title {
+	.ok-heading(132px);
+	margin: 0 0 36px;
+}
+
+.lead {
+	.ok-body(60px);
+	margin: 0 0 96px;
+	color: @ok-text-sub;
+}
+
+.steps {
+	display: flex;
+	flex-direction: column;
+	gap: 54px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.step {
+	.ok-body(60px);
+	display: flex;
+	align-items: flex-start;
+	gap: 42px;
+}
+
+.number {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	background-color: @ok-primary-container;
+	color: @ok-on-primary-container;
+	font-size: 48px;
+	font-weight: bold;
+	line-height: 1;
+}
+
+.notes {
+	display: flex;
+	flex-direction: column;
+	gap: 30px;
+	margin-top: 120px;
+}
+
+.note {
+	.ok-body(46px);
+	display: flex;
+	align-items: center;
+	gap: 30px;
+	margin: 0;
+	color: @ok-text-sub;
+}
+
+.noteGlyph {
+	width: 54px;
+	height: 54px;
+}
+
+.side {
+	display: flex;
+	flex-direction: column;
+	align-self: center;
+	gap: 60px;
+}
+
+.card {
+	box-sizing: border-box;
+	padding: 84px 96px;
+	border-radius: @ok-radius-l;
+	background-color: @ok-panel;
+}
+
+.status {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 42px;
+	min-height: 880px;
+	text-align: center;
+}
+
+.statusTitle {
+	.ok-heading(84px);
+	margin: 0;
+}
+
+.statusBody {
+	.ok-body(54px);
+	margin: -12px 0 0;
+	color: @ok-text-sub;
+	text-wrap: balance;
+}
+
+.bubble {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 192px;
+	height: 192px;
+	border-radius: 50%;
+	background-color: @ok-primary-container;
+	color: @ok-on-primary-container;
+}
+
+.error {
+	background-color: @ok-error-container;
+	color: @ok-error;
+}
+
+.bubbleGlyph {
+	width: 96px;
+	height: 96px;
+}
+
+// Sandstone's spinner brings its own margins; the column's gap spaces it here.
+.status .spinner,
+.status .smallSpinner {
+	margin: 0;
+}
+
+.digits {
+	display: flex;
+	gap: 30px;
+	margin: 12px 0;
+}
+
+.digit {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 180px;
+	height: 228px;
+	border-radius: @ok-radius-m;
+	background-color: @ok-panel-highest;
+	font-size: 144px;
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+.waiting {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	color: @ok-text-sub;
+	font-size: 48px;
+}
+
+.cardTitle {
+	.ok-heading(60px);
+	margin: 0 0 18px;
+}
+
+.cardBody {
+	.ok-body(48px);
+	margin: 0 0 48px;
+	color: @ok-text-sub;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 36px;
+
+	// Sandstone's own margins would push the field off the card's edge.
+	.input {
+		flex: 1;
+		min-width: 0;
+		margin: 0;
+	}
+}
+
+.invalid {
+	.ok-body(46px);
+	margin: 30px 0 0;
+	color: @ok-error;
+}

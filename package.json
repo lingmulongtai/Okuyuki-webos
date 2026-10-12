@@ -12,8 +12,16 @@
     "still4k:assets": "python3 tools/still4k/make_assets.py",
     "still4k:package": "ares-package apps/still4k --outdir dist",
     "still4k:serve": "node tools/still4k/serve.mjs",
-    "check": "node --check apps/still4k/main.js && node --check tools/still4k/serve.mjs && python3 -m py_compile tools/make_icons.py tools/still4k/make_assets.py tools/still4k/convert.py",
-    "test:browser": "playwright test"
+    "tv:install": "npm --prefix apps/tv ci",
+    "tv:lint": "npm --prefix apps/tv run lint",
+    "tv:test": "npm --prefix apps/tv test",
+    "tv:build": "npm --prefix apps/tv run pack-p",
+    "tv:package": "ares-package apps/tv/dist --outdir dist",
+    "mock-host": "node tools/mock-host/server.mjs",
+    "check": "node --check apps/still4k/main.js && node --check tools/still4k/serve.mjs && node --check tools/mock-host/server.mjs && node --check tools/mock-host/ws.mjs && node --check tools/mock-host/png.mjs && node --check tools/mock-host/media.mjs && node --check tools/mock-host/library.mjs && python3 -m py_compile tools/make_icons.py tools/still4k/make_assets.py tools/still4k/convert.py",
+    "test:browser": "playwright test",
+    "test:still4k": "playwright test --project still4k",
+    "test:tv": "playwright test --project tv"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

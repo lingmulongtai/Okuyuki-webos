@@ -1,0 +1,79 @@
+@import 'theme.less';
+
+.action {
+	position: relative;
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	box-sizing: border-box;
+	height: 132px;
+	min-width: 264px;
+	padding: 0 66px;
+	border-radius: 66px;
+	font-size: 54px;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+	outline: none;
+	transition: transform @ok-motion, background-color @ok-motion, color @ok-motion, box-shadow @ok-motion;
+
+	&:focus {
+		background-color: @ok-focus;
+		color: @ok-on-focus;
+		box-shadow: @ok-focus-shadow;
+		transform: scale(1.06);
+	}
+
+	&[aria-disabled] {
+		opacity: 0.4;
+	}
+}
+
+.primary {
+	background-color: @ok-primary;
+	color: @ok-on-primary;
+}
+
+.tonal {
+	background-color: @ok-panel-highest;
+	color: @ok-text;
+}
+
+.chip {
+	height: 108px;
+	min-width: 216px;
+	padding: 0 60px;
+	border-radius: 54px;
+	background-color: @ok-panel-high;
+	color: @ok-text-sub;
+	font-size: 48px;
+
+	&.selected {
+		background-color: @ok-primary-container;
+		color: @ok-on-primary-container;
+	}
+
+	// Focus looks the same everywhere; a selected chip keeps its colour in the text.
+	&.selected:focus {
+		background-color: @ok-focus;
+		color: @ok-primary-container;
+	}
+}
+
+.round {
+	min-width: 0;
+	width: 132px;
+	padding: 0;
+}
+
+.icon {
+	width: 60px;
+	height: 60px;
+}
+
+.text {
+	display: block;
+}
