@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+test-results/
+playwright-report/
+*.ipk
+*.log
+.env*
+.DS_Store
+__pycache__/
+*.pyc
+
+# Generated test media and personal photos never go into git.
+apps/still4k/assets
+still4k-photos/
