@@ -1,0 +1,23 @@
+// The video plane sits behind the page, so nothing above it may paint a background
+// while a photo or video is on screen.
+:global(html),
+:global(body) {
+	background: transparent;
+}
+
+.app {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	overflow: hidden;
+}
+
+.browsing {
+	background-color: #0b0d10;
+}
+
+.viewing {
+	background: transparent;
+}
