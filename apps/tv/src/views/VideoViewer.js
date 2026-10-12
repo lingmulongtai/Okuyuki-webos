@@ -54,6 +54,8 @@ const Waiting = ({failure, onClose, onRetry, progress}) => {
 			</div>
 		);
 	}
+	// Nothing until the phone reports a percent or more: a lone 0% reads as stuck.
+	const percent = progress === null ? 0 : Math.round(progress * 100);
 	return (
 		<div className={css.waiting} data-testid="video-preparing">
 			<div className={css.card}>
@@ -62,8 +64,7 @@ const Waiting = ({failure, onClose, onRetry, progress}) => {
 				{progress === null ? null : (
 					<div className={css.meter}>
 						<ProgressBar className={css.progress} progress={progress} />
-						{/* Nothing until the phone reports some progress: a lone 0% reads as stuck. */}
-						<span className={css.percent}>{progress > 0 ? Math.round(progress * 100) + '%' : ''}</span>
+						<span className={css.percent}>{percent > 0 ? percent + '%' : ''}</span>
 					</div>
 				)}
 			</div>
