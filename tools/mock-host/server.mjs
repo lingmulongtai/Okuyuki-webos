@@ -15,7 +15,7 @@ import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { folderLibrary, page, publicItem, sortItems, syntheticItem, syntheticLibrary, TEST_VIDEO_SECONDS } from './library.mjs';
 import { exists, makeJpeg, makeStill, makeTestVideo, pickFormat, stillSize } from './media.mjs';
-import { drawItem } from './png.mjs';
+import { DRAWING_VERSION, drawItem } from './png.mjs';
 import { accept } from './ws.mjs';
 
 const options = {
@@ -69,7 +69,8 @@ const state = {
 	viewingLog: [],
 	sockets: new Set(),
 	jobs: new Map(),
-	pictures: new Map()
+	pictures: new Map(),
+	prepareDelay: options.prepareDelay
 };
 
 async function loadLibrary() {
@@ -260,7 +261,7 @@ setInterval(() => broadcast({ type: 'heartbeat' }), options.heartbeat).unref();
 // ---- Pictures, stills and videos ----
 
 function cacheDir() {
-	const source = options.photos ?? `synthetic-${options.items}`;
+	const source = options.photos ?? `synthetic-${options.items}-${DRAWING_VERSION}`;
 	return join(options.cache, createHash('sha1').update(source).digest('hex').slice(0, 12));
 }
 
@@ -269,7 +270,7 @@ async function picture(item, kind) {
 	if (!state.pictures.has(key)) {
 		state.pictures.set(key, (async () => {
 			const [width, height] = kind === 'thumb' ? [480, 270] : [1920, 1080];
-			if (!item.path) return { type: 'image/png', data: drawItem(width, height, item.number, { video: item.kind === 'video' }) };
+			if (!item.path) return { type: 'image/png', data: drawItem(width, height, item.number) };
 			const out = join(cacheDir(), `${item.id}-${kind}.jpg`);
 			if (!(await exists(out))) await makeJpeg(item.path, out, width, height);
 			return { type: 'image/jpeg', path: out };
@@ -306,7 +307,7 @@ function startJob(item, target, job) {
 	job.state = 'preparing';
 	job.startedAt = Date.now();
 	job.promise = (async () => {
-		if (options.prepareDelay) await new Promise((done) => setTimeout(done, options.prepareDelay));
+		if (state.prepareDelay) await new Promise((done) => setTimeout(done, state.prepareDelay));
 		if (!(await exists(job.out))) {
 			await mkdir(cacheDir(), { recursive: true });
 			if (target === 'video') {
@@ -356,7 +357,7 @@ function prepare(item, target, key) {
 		return { state: 'failed' };
 	}
 	const expected = target === 'still' ? 3000 : 6000;
-	return { state: 'preparing', progress: Math.min(0.95, (Date.now() - job.startedAt) / (expected + options.prepareDelay)) };
+	return { state: 'preparing', progress: Math.min(0.95, (Date.now() - job.startedAt) / (expected + state.prepareDelay)) };
 }
 
 // ---- Routes ----
@@ -449,7 +450,12 @@ async function control(req, res, action, url) {
 			state.keys.clear();
 			closeSockets(1000, 'closed');
 			return json(res, 200, {});
+		case 'delay':
+			// How long the phone takes to prepare a still or video, from now on.
+			state.prepareDelay = Math.max(0, Number(url.searchParams.get('ms')) || 0);
+			return json(res, 200, { prepareDelay: state.prepareDelay });
 		case 'reset':
+			state.prepareDelay = options.prepareDelay;
 			state.pairs.clear();
 			state.tokens.clear();
 			state.keys.clear();
