@@ -7,6 +7,8 @@
   "title": "Okuyuki TV",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
+  "iconColor": "#141821",
+  "splashBackground": "splash.png",
   "resolution": "1920x1080",
   "disableBackHistoryAPI": true,
   "requiredACG": []
