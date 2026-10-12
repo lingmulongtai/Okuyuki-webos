@@ -1,0 +1,22 @@
+{
+  "name": "okuyuki-webos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Okuyuki for LG webOS TVs",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "icons": "python3 tools/make_icons.py",
+    "still4k:assets": "python3 tools/still4k/make_assets.py",
+    "still4k:package": "ares-package apps/still4k --outdir dist",
+    "still4k:serve": "node tools/still4k/serve.mjs",
+    "check": "node --check apps/still4k/main.js && node --check tools/still4k/serve.mjs && python3 -m py_compile tools/make_icons.py tools/still4k/make_assets.py tools/still4k/convert.py",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@webos-tools/cli": "3.2.6"
+  }
+}
