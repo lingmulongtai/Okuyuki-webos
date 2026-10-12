@@ -28,9 +28,9 @@
 
 `Item.hdr` は `none`、`ultrahdr`、`hdr10`、`hlg`、`hdr10plus` のどれか。`durationMs` は動画だけに入り、写真は `null` です。
 
-**Prepared**: `state` は `ready`、`preparing`、`unsupported`、`failed` のどれか。`ready` のときだけ `url`（ホストからの相対パス）、`width`、`height`、`mime`、`codecs` が入ります。`preparing` の間は `progress`（0〜1）が入り、終わると `prepared` イベントが届きます。イベントを受け取れない場合は同じ要求を送り直して状態を確かめます。
+**Prepared**: `state` は `ready`、`preparing`、`unsupported`、`failed` のどれか。`ready` のときだけ `url`（ホストからの相対パス）、`width`、`height`、`mime` が入り、ホストが作ったファイルには `codecs` も入ります。元の動画をそのまま送るときは、テレビが capabilities で伝えた形式なので `codecs` を省くことがあります。`hdr` は再生される映像の HDR の種類で、値は `Item.hdr` と同じです。`preparing` の間は `progress`（0〜1）が入り、終わると `prepared` イベントが届きます。イベントを受け取れない場合は同じ要求を送り直して状態を確かめます。
 
-`still` は常にテレビの動画プレーンと同じ大きさ（capabilities の `videoWidth`×`videoHeight`、ふつうは 3840×2160）で、写真を縦横比を保って収め、余白を黒で埋めます。テレビ側の拡大縮小に頼らないためです。形式は capabilities の `video` から `hevc-main10`、`hevc-main`、`av1-main10`、`vp9-profile2`、`vp9`、`h264-high` の順に選び、どれもなければ `unsupported` です。
+`still` は常にテレビの動画プレーンと同じ大きさ（capabilities の `videoWidth`×`videoHeight`、ふつうは 3840×2160）で、写真を縦横比を保って収め、余白を黒で埋めます。テレビ側の拡大縮小に頼らないためです。形式はホストが capabilities の `video` から選びます。スマホは `hevc-main10` か `hevc-main` があれば HEVC、なければ `h264-high` で H.264 を作り、AV1 と VP9 は作りません。作れる形式がなければ `unsupported` です。Ultra HDR の写真は、テレビが `hevc-main10` と `hlg` を伝えたときだけ HLG（BT.2020、10bit）の静止画動画になり、スマホがその形式を作れなければ SDR になります。モックホストはテレビ側の処理を確かめるため、`hevc-main10`、`hevc-main`、`av1-main10`、`vp9-profile2`、`vp9`、`h264-high` の順に選びます。
 
 メディアキーは `expiresAt` まで有効です。新しいセッションを開いても古いキーは期限まで使えるので、再生中の動画は途切れません。接続をオフにしたときと、テレビの許可を取り消したときは、その場ですべてのキーが無効になります。
 
