@@ -53,10 +53,10 @@ Okuyuki TV は、Galaxy に入っている写真と動画を、同じ Wi-Fi に�
 
 | 種類 | 表示方法 | 解像度 | HDR | スマホ側の処理 |
 | --- | --- | --- | --- | --- |
-| 動画（4K まで） | 元ファイルを `<video>` で再生（Range 対応） | 元のまま | HDR10、HLG。HDR10+ は HDR10 として表示 | なし。C5 の上限（HEVC 4K60 で 60 Mbps）を超えるものだけ変換 |
-| 8K 動画 | 4K に変換して再生（C5 は 4K モデル） | 3840×2160 | 元に合わせる | Media3 Transformer で 4K HEVC 10bit に変換 |
+| 動画（4K まで） | 元ファイルを `<video>` で再生（Range 対応） | 元のまま | HDR10、HLG。HDR10+ は HDR10 として表示 | なし。テレビが再生できない形式（mp4・webm 以外や Dolby Vision など）と 60 Mbps を超えるものだけ変換 |
+| 8K 動画 | 4K に変換して再生（C5 は 4K モデル） | 3840×2160 | 元に合わせる | Media3 Transformer で 4K の HEVC に変換。HDR はテレビが表示できれば保つ |
 | 写真（標準） | `<img>` で表示 | 1920×1080 | なし | ImageDecoder で 1920×1080 に収まる高品質 JPEG に変換 |
-| 写真（最高画質） | 静止画動画として再生面に表示し、UI を上に重ねる | 3840×2160 | Ultra HDR 写真は HDR10 で表示 | Media3 Transformer で 4K の HEVC 静止画動画に変換（HDR 写真は 10bit） |
+| 写真（最高画質） | 静止画動画として再生面に表示し、UI を上に重ねる | 3840×2160 | Ultra HDR 写真は HLG で表示（スマホが作れないときは SDR） | Media3 Transformer で 4K の静止画動画に変換。HEVC（再生できないテレビには H.264）で、HDR 写真は HLG の 10bit |
 | 3D 写真 | HEIC の主画像（片目）を上のどちらかで表示 | 上に同じ | 上に同じ | 主画像がどちらの目かは実機で確認 |
 
 コーデックと上限は [LG: webOS TV 25 の動画形式](https://webostv.developer.lge.com/develop/specifications/video-audio-250) によります。
@@ -113,12 +113,13 @@ v1 はそのまま残し、テレビ向けの機能を `/v2` に足します。Q
 | POST | `/v2/session` | メディアキーを発行。`{ key, expiresAt }` | Bearer |
 | POST | `/v2/k/{key}/capabilities` | テレビの画面と再生できる形式を伝える | キー |
 | GET | `/v2/k/{key}/library?filter=&cursor=` | `filter` は all・photo・video・stereo。`(takenAt, id)` のキーセットで最大 60 件 | キー |
+| GET | `/v2/k/{key}/items/{id}` | 1 件の情報（`Item`） | キー |
 | GET | `/v2/k/{key}/items/{id}/thumb` | サムネイル JPEG（長辺 480px） | キー |
 | GET | `/v2/k/{key}/items/{id}/display` | 標準画質 JPEG（1920×1080 に収める） | キー |
-| POST | `/v2/k/{key}/items/{id}/prepare?target=still\|video` | 最高画質の静止画動画、または再生用の動画を準備。`{ state, url, width, height, hdr }` | キー |
+| POST | `/v2/k/{key}/items/{id}/prepare?target=still\|video` | 最高画質の静止画動画、または再生用の動画を準備。`{ state, url, width, height, hdr, mime, codecs, progress }` | キー |
 | GET | `/v2/k/{key}/items/{id}/still` | 4K 静止画動画（Range 対応） | キー |
 | GET | `/v2/k/{key}/items/{id}/video` | 動画。元ファイルか 4K 変換版（Range 対応） | キー |
-| WS | `/v2/k/{key}/events` | `library_changed`、`prepared`、`show`、`viewing`、`heartbeat` | キー |
+| WS | `/v2/k/{key}/events` | `library_changed`、`prepared`、`show`、`viewing`、`heartbeat`、`session_closed` | キー |
 
 **データ型**: `Item` は `id`、`kind`（photo・video）、`name`、`takenAt`、`width`、`height`、`sizeBytes`、`mime`、`durationMs`、`stereo`、`hdr`（none・ultrahdr・hdr10・hlg・hdr10plus）を持ちます。
 
