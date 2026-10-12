@@ -127,6 +127,7 @@ const AppBase = ({className, ...rest}) => {
 	}, []);
 	const handleConnect = useCallback((phone) => connection.connect(phone), [connection]);
 	const handleRetry = useCallback(() => connection.retry(), [connection]);
+	const handleDisconnect = useCallback(() => connection.disconnect(), [connection]);
 	const handleFilter = useCallback((filter) => {
 		setGridIndex(null);
 		library.setFilter(filter);
@@ -138,6 +139,7 @@ const AppBase = ({className, ...rest}) => {
 		content = (
 			<ConnectView
 				state={status}
+				onCancel={handleDisconnect}
 				onConnect={handleConnect}
 				onRetry={handleRetry}
 				onExit={exitApp}
@@ -171,6 +173,7 @@ const AppBase = ({className, ...rest}) => {
 				client={connection.client}
 				focusIndex={focusIndex}
 				library={libraryState}
+				onDisconnect={handleDisconnect}
 				onExit={exitApp}
 				onFilter={handleFilter}
 				onLoadMore={handleLoadMore}

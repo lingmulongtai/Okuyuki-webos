@@ -1,3 +1,5 @@
+@import '../components/theme.less';
+
 // Sizes are in 4K units like the rest of Sandstone; they render at half size on the 1920x1080 page.
 .viewer {
 	position: absolute;
@@ -23,16 +25,56 @@
 	bottom: 0;
 	left: 0;
 	display: flex;
-	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: 72px;
-	background-color: #000000;
+	background-color: @ok-ink;
+	color: @ok-text;
+}
+
+.card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 48px;
+	box-sizing: border-box;
+	width: 1800px;
+	padding: 120px 144px;
+	border-radius: @ok-radius-l;
+	background-color: @ok-panel;
+	text-align: center;
+}
+
+.spinner {
+	margin: 0;
+}
+
+.problem {
+	width: 144px;
+	height: 144px;
+	color: @ok-error;
 }
 
 .text {
-	font-size: 60px;
-	text-align: center;
+	.ok-body(60px);
+	margin: 0;
+	text-wrap: balance;
+}
+
+// The percentage sits right of the bar, balanced by an empty column on the left.
+.meter {
+	display: grid;
+	grid-template-columns: 150px minmax(0, 1fr) 150px;
+	align-items: center;
+	column-gap: 36px;
+	align-self: stretch;
+}
+
+.percent {
+	grid-column: 3;
+	color: @ok-text-sub;
+	font-size: 48px;
+	font-variant-numeric: tabular-nums;
+	text-align: left;
 }
 
 .buttons {
@@ -40,6 +82,8 @@
 	gap: 36px;
 }
 
-.progress {
-	width: 1600px;
+// Sandstone's bar brings its own margins; the row spaces it here.
+.meter .progress {
+	grid-column: 2;
+	margin: 0;
 }

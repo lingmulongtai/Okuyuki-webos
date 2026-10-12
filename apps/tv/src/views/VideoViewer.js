@@ -1,11 +1,13 @@
-import BodyText from '@enact/sandstone/BodyText';
-import Button from '@enact/sandstone/Button';
 import ProgressBar from '@enact/sandstone/ProgressBar';
 import Spinner from '@enact/sandstone/Spinner';
 import VideoPlayer from '@enact/sandstone/VideoPlayer';
+import Spotlight from '@enact/spotlight';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-import {formatDate, formatDuration} from '../components/format';
+import Action from '../components/Action';
+import Copy from '../components/Copy';
+import {formatDuration, longDate} from '../components/format';
+import Glyph from '../components/Glyph';
 import {canPlay} from '../host/capabilities';
 import {onBackKey} from '../platform/webos';
 import {describeError} from '../state/connection';
@@ -33,21 +35,38 @@ function describe (prepared) {
 }
 
 const Waiting = ({failure, onClose, onRetry, progress}) => {
+	// After a failure the remote starts on "もう一度".
+	useEffect(() => {
+		if (failure) Spotlight.focus('[data-action="video-retry"]');
+	}, [failure]);
+
 	if (failure) {
 		return (
 			<div className={css.waiting} data-testid="video-failure">
-				<BodyText className={css.text}>{failure}</BodyText>
-				<div className={css.buttons}>
-					<Button onClick={onRetry}>もう一度</Button>
-					<Button onClick={onClose}>戻る</Button>
+				<div className={css.card}>
+					<Glyph className={css.problem} name="alert" />
+					<p className={css.text}><Copy>{failure}</Copy></p>
+					<div className={css.buttons}>
+						<Action data-action="video-retry" kind="primary" onClick={onRetry}>もう一度</Action>
+						<Action onClick={onClose}>戻る</Action>
+					</div>
 				</div>
 			</div>
 		);
 	}
 	return (
 		<div className={css.waiting} data-testid="video-preparing">
-			<Spinner>{progress === null ? '動画を読み込んでいます…' : 'スマホで動画を準備しています…'}</Spinner>
-			{progress === null ? null : <ProgressBar className={css.progress} progress={progress} />}
+			<div className={css.card}>
+				<Spinner className={css.spinner} />
+				<p className={css.text}>{progress === null ? '動画を読み込んでいます…' : 'スマホで動画を準備しています…'}</p>
+				{progress === null ? null : (
+					<div className={css.meter}>
+						<ProgressBar className={css.progress} progress={progress} />
+						{/* Nothing until the phone reports some progress: a lone 0% reads as stuck. */}
+						<span className={css.percent}>{progress > 0 ? Math.round(progress * 100) + '%' : ''}</span>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 };
@@ -114,7 +133,7 @@ const VideoSession = ({connection, item, onClose, onRetry, retried}) => {
 					onBack={onClose}
 					poster={poster}
 					ref={player}
-					title={formatDate(item.takenAt)}
+					title={longDate(item.takenAt)}
 				>
 					<source src={source} type={videoType(prepared)} />
 					<infoComponents>{[describe(prepared), formatDuration(item.durationMs)].filter(Boolean).join('  ')}</infoComponents>
