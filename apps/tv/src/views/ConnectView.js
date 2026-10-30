@@ -10,6 +10,7 @@ import Copy from '../components/Copy';
 import {named} from '../components/format';
 import Glyph from '../components/Glyph';
 import {parseAddress} from '../host/client';
+import {runtimeMessage} from '../host/runtime-status';
 import {onBackKey} from '../platform/webos';
 
 import css from './ConnectView.module.less';
@@ -133,7 +134,7 @@ const FOCUS = {
 	error: (input, phone) => (phone ? '[data-action="retry"]' : '.' + input)
 };
 
-const ConnectView = ({state, onCancel, onConnect, onExit, onRetry}) => {
+const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck, runtimeStatus}) => {
 	const typing = state.status === 'idle' || state.status === 'error';
 
 	useEffect(() => onBackKey(onExit), [onExit]);
@@ -165,6 +166,8 @@ const ConnectView = ({state, onCancel, onConnect, onExit, onRetry}) => {
 						<Glyph className={css.noteGlyph} name="lock" />
 						<span>写真はクラウドを通らず、テレビにも残りません。</span>
 					</p>
+					<Action onClick={onUpdateCheck}>更新を確認</Action>
+					<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus)}</p>
 				</div>
 			</div>
 			<div className={css.side}>

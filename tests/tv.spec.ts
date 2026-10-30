@@ -108,6 +108,23 @@ test('announces a published update before connecting a phone', async ({ page }) 
 	await expect(page.getByRole('status')).toContainText('PC');
 });
 
+test('checks standalone updates before pairing and reports compatibility', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'incompatible'});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('IPK 再導入');
+	await screenshot(page, 'tv-update-check');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'ready', version: '0.2.0'});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+});
+
 test('pairs with the phone and shows its library', async ({ page, request }) => {
 	const errors = trackErrors(page);
 	await launch(page);
@@ -322,6 +339,7 @@ test('keeps photos at standard quality when best quality is off', async ({ page,
 	await page.getByRole('button', { name: '設定' }).click();
 	await page.getByText('写真を最高画質（4K）で表示する').click();
 	await expect(page.getByText(`Okuyuki TV ${appVersion}`)).toBeVisible();
+	await expect(page.getByText(`インストール済み IPK ${appVersion}`)).toBeVisible();
 	await screenshot(page, 'tv-settings');
 	await page.keyboard.press('Escape');
 	await gridItems(page).first().click();
