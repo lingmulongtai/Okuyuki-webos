@@ -36,6 +36,8 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         }));
         await page.reload();
         await page.waitForFunction(() => window.okuyukiRuntimeVersion === '0.1.2');
+        await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('適用済み'));
+        assert.equal(await page.evaluate(() => window.okuyukiUpdateConfig.version), '0.1.1');
         assert.match(await page.locator('#root').innerText(), /スマホ|接続/);
         assert.equal(await page.evaluate(() => location.protocol), 'file:');
         assert.deepEqual(errors, []);
