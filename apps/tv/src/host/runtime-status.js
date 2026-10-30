@@ -13,7 +13,14 @@ export function releaseNotice (release, runtime, runtimeVersion, pendingVersion)
 	return prefix + 'テレビ単体の更新を後でもう一度確認してください。';
 }
 
-export function runtimeMessage (update) {
+export function runtimeMessage (update, pendingVersion) {
+	if (pendingVersion && update.status !== 'ready') {
+		const saved = '画面更新 ' + pendingVersion + ' を保存しました。次回起動時に適用します。';
+		if (update.status === 'checking') return saved + ' 新しい更新を確認中です。';
+		if (update.status === 'error') return saved + ' 最新の更新は確認できませんでした。';
+		if (update.status === 'incompatible') return saved + ' さらに新しい更新には IPK 再導入が必要です。';
+		return saved;
+	}
 	switch (update.status) {
 		case 'checking': return 'テレビ単体の更新を確認中…';
 		case 'ready': return '画面更新 ' + update.version + ' を保存しました。次回起動時に適用します。';
@@ -23,4 +30,3 @@ export function runtimeMessage (update) {
 		default: return 'テレビ単体の更新を確認できませんでした。';
 	}
 }
-

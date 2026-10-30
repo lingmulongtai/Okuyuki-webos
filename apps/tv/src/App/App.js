@@ -215,6 +215,7 @@ const AppBase = ({className, ...rest}) => {
 				onExit={exitApp}
 				onUpdateCheck={checkForUpdates}
 				runtimeStatus={runtimeStatus}
+				runtimeUpdate={runtimeUpdate}
 			/>
 		);
 	} else if (viewer && items[viewer.index] && viewer.mode === 'video') {
@@ -256,6 +257,7 @@ const AppBase = ({className, ...rest}) => {
 				sessionVersion={status.sessionVersion}
 				settings={settings}
 				runtimeStatus={runtimeStatus}
+				runtimeUpdate={runtimeUpdate}
 				runtimeVersion={runtimeVersion}
 				installedVersion={installedVersion}
 				update={update}

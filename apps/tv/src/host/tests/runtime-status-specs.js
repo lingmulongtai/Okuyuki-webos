@@ -19,3 +19,11 @@ test('explains when an update needs a new IPK', () => {
 	expect(runtimeMessage({status: 'incompatible'})).toContain('IPK');
 	expect(runtimeMessage({status: 'ready', version: '0.1.4'})).toContain('0.1.4');
 });
+
+test('keeps a saved update visible when a later check fails', () => {
+	const failed = runtimeMessage({status: 'error'}, '0.1.5');
+	expect(failed).toContain('0.1.5 を保存');
+	expect(failed).toContain('確認できません');
+	expect(runtimeMessage({status: 'checking'}, '0.1.5')).toContain('確認中');
+	expect(runtimeMessage({status: 'incompatible'}, '0.1.5')).toContain('IPK 再導入');
+});

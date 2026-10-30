@@ -137,7 +137,7 @@ function updateMessage (update) {
 	return '最新版です。';
 }
 
-const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, settings, update, runtimeStatus, runtimeVersion, installedVersion}) => {
+const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, settings, update, runtimeStatus, runtimeUpdate, runtimeVersion, installedVersion}) => {
 	const toggleBestQuality = useCallback(() => {
 		onSettings({...settings, bestQuality: !settings.bestQuality});
 	}, [onSettings, settings]);
@@ -173,7 +173,7 @@ const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, sett
 				<h3 className={css.groupTitle}>このアプリについて</h3>
 				<p className={css.note}>{'Okuyuki TV ' + runtimeVersion}</p>
 				<p className={css.note}>{'インストール済み IPK ' + installedVersion}</p>
-				<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus)}</p>
+				<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus, runtimeUpdate)}</p>
 				<p className={css.note}>{'IPK: ' + updateMessage(update)}</p>
 				<Action onClick={onUpdateCheck}>更新を確認</Action>
 				<p className={css.note}>互換性のある画面更新はテレビ単体で取得します。IPK 自体の更新には PC が必要です。</p>
@@ -197,6 +197,7 @@ const LibraryView = ({
 	sessionVersion,
 	settings,
 	runtimeStatus,
+	runtimeUpdate,
 	runtimeVersion,
 	installedVersion,
 	update
@@ -309,6 +310,7 @@ const LibraryView = ({
 					phone={phone}
 					settings={settings}
 					runtimeStatus={runtimeStatus}
+					runtimeUpdate={runtimeUpdate}
 					runtimeVersion={runtimeVersion}
 					installedVersion={installedVersion}
 					update={update}

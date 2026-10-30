@@ -146,6 +146,20 @@ test('shows the TV update result without waiting for a slow IPK check', async ({
 	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
 });
 
+test('keeps a saved update visible when a later check fails', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: '0.2.0'}));
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'error'});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+	await expect(page.getByTestId('runtime-status')).toContainText('確認できません');
+	await expect(page.getByRole('status')).toContainText('0.2.0 の更新を保存');
+});
+
 test('does not suggest a PC while a standalone update is being checked', async ({ page }) => {
 	let available = false;
 	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({
