@@ -121,6 +121,17 @@ test('file-origin runtime verifies, stages, restarts offline and rejects tamperi
         }));
         assert.equal(highWater, '0.1.4');
         await concurrent.close();
+
+        // An update checking during its own startup is already running, not waiting for another restart.
+        const startup = await browser.newContext();
+        const startupUpdate = createBundle({version: '0.1.3', shell, javascript: 'document.getElementById("root").textContent="STARTING";window.okuyukiCheckRuntimeUpdate().then(r=>window.startupCheck=r.status);window.dispatchEvent(new Event("okuyuki-runtime-started"));', css: 'body{}'}, keys.privateKey);
+        await startup.route(config.updateUrl, route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, body: startupUpdate}));
+        const startupPage = await startup.newPage();
+        await startupPage.goto(pathToFileURL(join(root, 'index.html')).href);
+        await startupPage.waitForFunction(() => window.okuyukiRuntimeUpdateReady === '0.1.3');
+        await startupPage.reload();
+        await startupPage.waitForFunction(() => window.startupCheck === 'current');
+        await startup.close();
     } finally {
         await browser.close();
         for (const name of files) await rm(join(root, name), {force: true});

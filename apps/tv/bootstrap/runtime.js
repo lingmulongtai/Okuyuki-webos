@@ -194,15 +194,17 @@
 				window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: item.version}));
 				return {status: 'ready', version: item.version};
 			}
-			return {status: 'current'};
+			return {status: 'error'};
 		} catch (error) {
 			return {status: error.message === 'Incompatible update' ? 'incompatible' : 'error'};
 		}
 	}
 	function check () {
-		if (!checking) checking = checkOnce().finally(() => {
-			checking = null;
-		});
+		if (!checking) {
+			checking = checkOnce().finally(() => {
+				checking = null;
+			});
+		}
 		return checking;
 	}
 	window.okuyukiCheckRuntimeUpdate = check;
@@ -219,10 +221,10 @@
 				try {
 					const item = await bounded(verified(envelope), 10000); const highWater = await bounded(read('highWater'), 5000);
 					if (highWater !== item.version || !newer(item.version, config.version)) throw new Error('Rollback refused');
-					window.okuyukiRuntimeVersion = item.version;
-					await launch(item); runningVersion = item.version; window.okuyukiRuntimeVersion = item.version;
+					runningVersion = item.version; window.okuyukiRuntimeVersion = item.version;
+					await launch(item);
 				} catch (_) {
-					window.okuyukiRuntimeVersion = config.version;
+					runningVersion = config.version; window.okuyukiRuntimeVersion = config.version;
 					const guarded = recoveryFlag(true);
 					const removed = await Promise.race([removeCandidate(envelope).catch(() => false), new Promise(resolve => setTimeout(() => resolve(false), 3000))]);
 					if (removed) recoveryFlag(false);
