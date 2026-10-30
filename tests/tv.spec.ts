@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // The TV app against the mock phone host (tools/mock-host). The mock picks the still format from
@@ -7,6 +7,7 @@ import { join } from 'node:path';
 
 const HOST = 'http://127.0.0.1:38765';
 const PHONE = { host: '127.0.0.1', port: 38765 };
+const appVersion = JSON.parse(readFileSync('apps/tv/webos-meta/appinfo.json', 'utf8')).version;
 
 // The synthetic library: item n has id 1000000 + n, every 7th is a video, every 11th photo is 3D.
 const newestPhoto = '1000150';
@@ -320,7 +321,7 @@ test('keeps photos at standard quality when best quality is off', async ({ page,
 	await openLibrary(page, request);
 	await page.getByRole('button', { name: '設定' }).click();
 	await page.getByText('写真を最高画質（4K）で表示する').click();
-	await expect(page.getByText('Okuyuki TV 0.1.0')).toBeVisible();
+	await expect(page.getByText(`Okuyuki TV ${appVersion}`)).toBeVisible();
 	await screenshot(page, 'tv-settings');
 	await page.keyboard.press('Escape');
 	await gridItems(page).first().click();
