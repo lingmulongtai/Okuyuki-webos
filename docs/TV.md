@@ -20,9 +20,9 @@
 
 ## アプリの更新
 
-0.1.3 は、起動時と起動中に定期的に署名付きの画面更新を確認します。スマホ未接続の画面と接続後の設定から「更新を確認」も選べます。互換性がある更新はテレビ内に保存し、次にアプリを開いたときに適用します。署名が不正な場合、通信できない場合、更新に必要な同梱ファイルが異なる場合は現在の版を使い続けます。更新版が起動に失敗した場合は同梱版へ戻ります。
+0.1.3 以降は、起動時と起動中に定期的に署名付きの画面更新を確認します。スマホ未接続の画面と接続後の設定から「更新を確認」も選べます。互換性がある更新はテレビ内に保存し、次にアプリを開いたときに適用します。署名が不正な場合、通信できない場合、更新に必要な同梱ファイルが異なる場合は現在の版を使い続けます。更新版が起動に失敗した場合は同梱版へ戻ります。
 
-画面更新は IPK 自体を更新するものではありません。アプリの権限、同梱アセット、起動処理などに変更が必要な場合は、従来どおり [GitHub Releases](https://github.com/lingmulongtai/Okuyuki-webos/releases) の新しい IPK を `ares-install` で導入してください。0.1.3 は更新の起動処理自体を改修したため、0.1.2 以前からは PC で 0.1.3 の IPK を一度インストールしてください。以後も IPK や同梱ファイルが変わる更新には再導入が必要です。テレビでの自動更新の動作は実機未検証です。
+画面更新は IPK 自体を更新するものではありません。アプリの権限、同梱アセット、起動処理などに変更が必要な場合は、従来どおり [GitHub Releases](https://github.com/lingmulongtai/Okuyuki-webos/releases) の新しい IPK を `ares-install` で導入してください。0.1.4 の画面更新は 0.1.3 の IPK と互換性があり、テレビ単体で取得できます。0.1.2 以前からは、PC で 0.1.4 の IPK を一度インストールしてください。以後も IPK や同梱ファイルが変わる更新には再導入が必要です。テレビでの自動更新の動作は実機未検証です。
 
 互換性のない IPK の更新も、PC で webOS CLI のデバイス登録を済ませていれば、PC を起動している間は補助ツールに任せることができます。リポジトリを PC に取得して `npm ci` を実行した後、登録した名前を指定します。
 
@@ -51,8 +51,8 @@ npm run tv:auto-update -- --device myTV
    npm ci
    npm run tv:install
    npm run tv:build
-   npm run tv:package        # dist/com.okuyuki.tv_0.1.3_all.ipk
-   ares-install --device c5 dist/com.okuyuki.tv_0.1.3_all.ipk
+   npm run tv:package        # dist/com.okuyuki.tv_0.1.4_all.ipk
+   ares-install --device c5 dist/com.okuyuki.tv_0.1.4_all.ipk
    ```
 
 3. PC でモックホストを起動します。ffmpeg が必要です（Windows なら `winget install Gyan.FFmpeg`）。
