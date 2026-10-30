@@ -12,6 +12,12 @@ function newer (a, b) {
 	return false;
 }
 
+export function isReleaseNewer (release, current) {
+	const candidate = version(release);
+	const installed = version(current);
+	return Boolean(candidate && installed && newer(candidate, installed));
+}
+
 export function selectUpdate (releases, installed) {
 	let best = version(installed);
 	if (!best || !Array.isArray(releases)) return null;

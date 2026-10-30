@@ -1,4 +1,4 @@
-import {checkUpdates, selectUpdate} from '../updates';
+import {checkUpdates, isReleaseNewer, selectUpdate} from '../updates';
 
 const release = (tag, extra = {}) => ({['tag_name']: tag, draft: false, assets: [{name: 'okuyuki.ipk', state: 'uploaded'}], ...extra});
 
@@ -12,4 +12,10 @@ test('reports network errors instead of saying the app is up to date', async () 
 	global.fetch = jest.fn(() => Promise.resolve({ok: false}));
 	await expect(checkUpdates('0.1.0')).rejects.toThrow();
 	delete global.fetch;
+});
+
+test('does not ask for an IPK when its runtime version is already active', () => {
+	expect(isReleaseNewer('0.1.4-alpha.1-preview', '0.1.4')).toBe(false);
+	expect(isReleaseNewer('0.1.5-alpha.1-preview', '0.1.4')).toBe(true);
+	expect(isReleaseNewer('invalid', '0.1.4')).toBe(false);
 });
