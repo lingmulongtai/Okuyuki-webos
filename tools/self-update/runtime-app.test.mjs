@@ -23,7 +23,8 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await cp(source, root, {recursive: true});
         await writeFile(join(root, 'bootstrap.js'), `window.okuyukiUpdateConfig=${JSON.stringify(config)};\n${runtime}`);
         const context = await browser.newContext({viewport: {width: 1920, height: 1080}});
-        await context.route(config.updateUrl, route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, body: envelope}));
+        let online = false;
+        await context.route(config.updateUrl, route => online ? route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, body: envelope}) : route.abort());
         let release = 'v0.1.2-alpha.1-preview';
         await context.route('https://api.github.com/**', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: [{tag_name: release, draft: false, assets: [{name: 'com.okuyuki.tv.ipk', state: 'uploaded'}]}]}));
         const page = await context.newPage();
@@ -31,6 +32,9 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         page.on('pageerror', error => errors.push(error.message));
         await page.goto(pathToFileURL(join(root, 'index.html')).href);
         await page.waitForFunction(() => document.getElementById('root').hasChildNodes());
+        await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('確認できませんでした'));
+        online = true;
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
         await page.waitForFunction(() => new Promise(resolveCandidate => {
             const request = indexedDB.open('okuyuki-tv-runtime', 1);
             request.onsuccess = () => { const get = request.result.transaction('state').objectStore('state').get('candidate'); get.onsuccess = () => resolveCandidate(!!get.result); };
