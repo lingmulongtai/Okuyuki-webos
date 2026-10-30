@@ -11,6 +11,7 @@ const appId = 'com.okuyuki.tv';
 const releaseApi = 'https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?per_page=30';
 const maximumBytes = 64 * 1024 * 1024;
 const cli = new URL('../../node_modules/@webos-tools/cli/bin/ares-install.js', import.meta.url);
+const packageCli = new URL('../../node_modules/@webos-tools/cli/bin/ares-package.js', import.meta.url);
 
 function version(text) {
     const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-alpha\.\d+(?:-preview)?)?$/.exec(text || '');
@@ -50,6 +51,19 @@ export function selectRelease(releases, installed) {
     return selected;
 }
 
+export function verifyPackageInfo(output, expectedVersion) {
+    const sections = output.split('< Application Information >');
+    if (sections.length !== 2 || !sections[0].includes('< Package Information >')) throw new Error('IPK の情報を確認できません。');
+    const exact = (text, key, value) => {
+        const matches = [...text.matchAll(new RegExp(`^${key}:\\s*(.+?)\\s*$`, 'gm'))];
+        return matches.length === 1 && matches[0][1] === value;
+    };
+    if (!exact(sections[0], 'Package', appId) || !exact(sections[0], 'Version', expectedVersion) ||
+        !exact(sections[1], 'id', appId) || !exact(sections[1], 'version', expectedVersion)) {
+        throw new Error('IPK のアプリ ID またはバージョンが一致しません。');
+    }
+}
+
 export async function updateOnce(device, {fetcher = fetch, execute = run} = {}) {
     if (!/^[A-Za-z0-9_.-]{1,80}$/.test(device || '')) throw new Error('TV のデバイス名を指定してください。');
     const command = [process.execPath, fileURLToPath(cli)];
@@ -76,6 +90,11 @@ export async function updateOnce(device, {fetcher = fetch, execute = run} = {}) 
     const path = join(temporary, selected.name);
     try {
         await writeFile(path, bytes, {flag: 'wx'});
+        const info = await execute(process.execPath, [fileURLToPath(packageCli), '--info', path], {timeout: 120000, maxBuffer: 4 * 1024 * 1024});
+        const candidateVersion = version(selected.tag).join('.');
+        verifyPackageInfo(info.stdout, candidateVersion);
+        const current = installedVersion((await exec(['--listfull'])).stdout);
+        if (!newer(version(candidateVersion), version(current))) return null;
         await exec([path]);
         return selected.tag;
     } finally { await rm(path, {force: true}); await rmdir(temporary); }

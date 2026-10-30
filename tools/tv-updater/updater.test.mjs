@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import {strict as assert} from 'node:assert';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
-import {installedVersion, selectRelease, updateOnce} from './updater.mjs';
+import {installedVersion, selectRelease, updateOnce, verifyPackageInfo} from './updater.mjs';
 
 const bytes = Buffer.from('test IPK');
 const hash = createHash('sha256').update(bytes).digest('hex');
@@ -27,10 +27,18 @@ test('selects a newer release with a pinned asset, without downgrading', () => {
     assert.equal(selectRelease([{...release(), draft: true}], '0.1.0'), null);
 });
 
+test('rejects packages with a different internal app ID or version', () => {
+    const info = '< Package Information >\nPackage: com.okuyuki.tv\nVersion: 0.1.1\n< Application Information >\nid: com.okuyuki.tv\nversion: 0.1.1\n';
+    verifyPackageInfo(info, '0.1.1');
+    assert.throws(() => verifyPackageInfo(info.replace('id: com.okuyuki.tv', 'id: other'), '0.1.1'));
+    assert.throws(() => verifyPackageInfo(info, '0.1.2'));
+});
+
 test('downloads and verifies the exact IPK before calling the installer', async () => {
     let installs = 0;
     const execute = async (_binary, args) => {
         if (args.includes('--listfull')) return {stdout: 'id : com.okuyuki.tv\nversion : 0.1.0\n'};
+        if (args.includes('--info')) return {stdout: '< Package Information >\nPackage: com.okuyuki.tv\nVersion: 0.1.1\n< Application Information >\nid: com.okuyuki.tv\nversion: 0.1.1\n'};
         assert.deepEqual(await readFile(args.at(-1)), bytes);
         installs++;
         return {stdout: 'success'};
@@ -45,4 +53,18 @@ test('downloads and verifies the exact IPK before calling the installer', async 
     await assert.rejects(updateOnce('myTV', {fetcher: badFetcher, execute}));
     assert.equal(installs, 1);
     await assert.rejects(updateOnce('../other', {fetcher, execute}));
+});
+
+test('does not install if the TV was updated while downloading', async () => {
+    let lists = 0;
+    let installs = 0;
+    const execute = async (_binary, args) => {
+        if (args.includes('--listfull')) return {stdout: `id : com.okuyuki.tv\nversion : ${++lists === 1 ? '0.1.0' : '0.1.2'}\n`};
+        if (args.includes('--info')) return {stdout: '< Package Information >\nPackage: com.okuyuki.tv\nVersion: 0.1.1\n< Application Information >\nid: com.okuyuki.tv\nversion: 0.1.1\n'};
+        installs++;
+    };
+    const fetcher = async url => url.includes('api.github.com')
+        ? new Response(JSON.stringify([release()])) : new Response(bytes);
+    assert.equal(await updateOnce('myTV', {fetcher, execute}), null);
+    assert.equal(installs, 0);
 });
