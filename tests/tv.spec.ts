@@ -125,6 +125,22 @@ test('checks standalone updates before pairing and reports compatibility', async
 	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
 });
 
+test('shows the TV update result without waiting for a slow IPK check', async ({ page }) => {
+	let slow = false;
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', async route => {
+		if (slow) await new Promise(resolve => setTimeout(resolve, 3000));
+		await route.fulfill({status: slow ? 503 : 200, headers: {'access-control-allow-origin': '*'}, json: []});
+	});
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'ready', version: '0.2.0'});
+	});
+	slow = true;
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
+});
+
 test('pairs with the phone and shows its library', async ({ page, request }) => {
 	const errors = trackErrors(page);
 	await launch(page);
