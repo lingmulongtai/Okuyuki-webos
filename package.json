@@ -17,6 +17,8 @@
     "tv:test": "npm --prefix apps/tv test",
     "tv:build": "npm --prefix apps/tv run pack-p",
     "tv:package": "ares-package apps/tv/dist --outdir dist",
+    "tv:auto-update": "node tools/tv-updater/cli.mjs",
+    "tv:update-test": "node --test tools/tv-updater/*.test.mjs",
     "mock-host": "node tools/mock-host/server.mjs",
     "check": "node --check apps/still4k/main.js && node --check tools/still4k/serve.mjs && node --check tools/mock-host/server.mjs && node --check tools/mock-host/ws.mjs && node --check tools/mock-host/png.mjs && node --check tools/mock-host/media.mjs && node --check tools/mock-host/library.mjs && python3 -m py_compile tools/make_icons.py tools/still4k/make_assets.py tools/still4k/convert.py",
     "test:browser": "playwright test",

@@ -72,6 +72,7 @@ jobs:
       - run: npm ci
       - run: npm run tv:install
       - run: npm run check
+      - run: npm run tv:update-test
       - run: npm run tv:lint
       - run: npm run tv:test
       - run: npm run tv:build
