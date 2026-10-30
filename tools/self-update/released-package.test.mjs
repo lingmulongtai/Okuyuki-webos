@@ -34,16 +34,25 @@ test('published 0.1.3 IPK applies the signed release without a PC', {timeout: 12
         await context.route('https://api.github.com/**', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
         const page = await context.newPage();
         const errors = [];
+        let navigations = 0;
         page.on('pageerror', error => errors.push(error.message));
+        page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
+        await page.addInitScript(() => {
+            window.okuyukiTestStarts = 0;
+            window.addEventListener('okuyuki-runtime-started', () => { window.okuyukiTestStarts++; });
+        });
         await page.goto(pathToFileURL(join(root, 'index.html')).href);
         await page.evaluate(() => localStorage.setItem('pairing-test', 'preserved'));
         await page.waitForFunction(version => window.okuyukiRuntimeUpdateReady === version, update.version);
         online = false;
+        const previousNavigations = navigations;
         await page.reload();
         await page.waitForFunction(version => window.okuyukiRuntimeVersion === version, update.version);
+        await page.waitForFunction(() => window.okuyukiTestStarts > 0);
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]'));
         await page.waitForTimeout(2500);
         assert.equal(await page.evaluate(() => window.okuyukiRuntimeVersion), update.version);
+        assert.equal(navigations, previousNavigations + 1);
         assert.equal(await page.evaluate(() => window.okuyukiUpdateConfig.version), '0.1.3');
         assert.equal(await page.evaluate(() => localStorage.getItem('pairing-test')), 'preserved');
         assert.deepEqual(errors, []);
