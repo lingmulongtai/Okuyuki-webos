@@ -1,0 +1,62 @@
+@import '../components/theme.less';
+
+// The video plane sits behind the page, so nothing above it may paint a background
+// while a photo or video is on screen.
+:global(html),
+:global(body) {
+	background: transparent;
+}
+
+// Sandstone's components in Okuyuki's colors (the same as the phone's and Quest's): ink pages,
+// dark panels and switches in the mark's blue. Focus stays near white, as on the TV's own screens.
+:global(.sandstone-theme) {
+	--sand-bg-color: #08090b;
+	--sand-text-color-rgb: 242, 243, 245;
+	--sand-text-sub-color: #b9c2c7;
+	--sand-component-text-color-rgb: 242, 243, 245;
+	--sand-component-text-sub-color-rgb: 185, 194, 199;
+	--sand-component-bg-color: #222629;
+	--sand-focus-text-color: #ffffff;
+	--sand-focus-bg-color-rgb: 240, 242, 248;
+	--sand-component-focus-text-color-rgb: 14, 17, 26;
+	--sand-selected-color-rgb: 232, 234, 241;
+	--sand-selected-bg-color: #29404b;
+	--sand-overlay-bg-color-rgb: 17, 19, 21;
+	--sand-toggle-off-bg-color: #383e41;
+	--sand-toggle-on-bg-color: #779caa;
+	--sand-progress-color-rgb: 195, 221, 232;
+	--sand-progress-bg-color-rgb: 34, 38, 41;
+	--sand-spinner-color: 195, 221, 232;
+	--sand-selection-bg-color: #29404b;
+	--sand-keyguide-bg-color-rgb: 26, 30, 32;
+}
+
+.app {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	overflow: hidden;
+	.ok-japanese();
+}
+
+.browsing {
+	background-color: @ok-ink;
+}
+
+.viewing {
+	background: transparent;
+}
+
+.updateNotice {
+	position: absolute;
+	right: 36px;
+	bottom: 24px;
+	left: 36px;
+	padding: 16px 24px;
+	border-radius: 12px;
+	background: #29404b;
+	color: #fff;
+	font-size: 24px;
+}

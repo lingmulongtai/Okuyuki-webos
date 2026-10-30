@@ -1,0 +1,135 @@
+/* The app runs at the 1920x1080 graphics resolution; video is shown on the 4K video plane behind it. */
+html, body {
+  margin: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: transparent;
+  color: #f2f2f2;
+  font-family: "LG Smart UI", "Noto Sans CJK JP", "Hiragino Sans", sans-serif;
+  font-size: 28px;
+}
+
+.screen { position: absolute; inset: 0; }
+.hidden { display: none !important; }
+
+#menu, #panel {
+  background: #101418;
+  padding: 64px 120px;
+  box-sizing: border-box;
+}
+
+h1 { font-size: 56px; margin: 0 0 16px; }
+h2 { font-size: 44px; margin: 0 0 24px; }
+.lead { color: #b8c0c8; margin: 0 0 40px; }
+.status { color: #9fd3ff; min-height: 1.4em; }
+
+.items { display: flex; flex-direction: column; gap: 14px; }
+
+button, input {
+  font: inherit;
+  color: inherit;
+  background: #1f262d;
+  border: 3px solid #33404c;
+  border-radius: 12px;
+  padding: 16px 28px;
+  text-align: left;
+}
+
+button:focus, input:focus, button.focused, input.focused {
+  outline: none;
+  border-color: #4aa8ff;
+  background: #233447;
+}
+
+/* Stage: no backgrounds, so the video plane shows through. */
+#stage { background: transparent; }
+
+#still-img, #stage video {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  object-fit: contain;
+  background: transparent;
+}
+
+#stage video.inactive { visibility: hidden; }
+
+/* Bottom right keeps the HUD off the 1 px test blocks at the top of the chart. */
+#hud {
+  position: absolute;
+  right: 32px;
+  bottom: 96px;
+  max-width: 1100px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.62);
+  font-size: 24px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+#stage.hud-top #hud { top: 32px; left: 32px; right: auto; bottom: auto; }
+
+#hud:empty { display: none; }
+
+#help {
+  position: absolute;
+  bottom: 28px;
+  left: 32px;
+  right: 32px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 22px;
+  color: #d8dde2;
+}
+
+#help:empty { display: none; }
+
+#overlay-demo { position: absolute; inset: 0; pointer-events: none; }
+
+#overlay-demo .badge {
+  position: absolute;
+  top: 40px;
+  right: 48px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.7);
+  font-weight: 700;
+}
+
+#overlay-demo .sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 90px;
+  padding: 28px 48px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.sheet-title { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+.sheet-body { color: #e6e6e6; margin-bottom: 18px; }
+.bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+.bar-fill { height: 100%; width: 30%; background: #4aa8ff; animation: slide 2.4s linear infinite; }
+
+@keyframes slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(340%); }
+}
+
+.controls { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.controls input { width: 640px; }
+
+/* 25 whole lines, so scrolling by 10 lines never leaves a cut-off line at the bottom. */
+#panel-text {
+  margin: 0;
+  max-height: 750px;
+  overflow: auto;
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 22px;
+  line-height: 30px;
+  white-space: pre-wrap;
+  color: #dfe6ec;
+}

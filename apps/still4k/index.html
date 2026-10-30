@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Okuyuki 4K Test</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="menu" class="screen">
+    <h1>Okuyuki 4K 静止画テスト</h1>
+    <p class="lead">十字キーで選び、決定ボタンで開きます。テスト中は「戻る」でこの画面に戻ります。</p>
+    <div class="items">
+      <button class="item" data-test="resolution">1. 解像度：画像（1080p）と 4K 静止画動画を比べる</button>
+      <button class="item" data-test="hdr">2. HDR：HDR10 と HLG の静止画</button>
+      <button class="item" data-test="single">3. 切り替え速度：video 1 つ</button>
+      <button class="item" data-test="double">4. 切り替え速度：video 2 つを交互に使う</button>
+      <button class="item" data-test="overlay">5. 動画の上に UI を重ねる</button>
+      <button class="item" data-test="formats">6. 再生できる形式の一覧</button>
+      <button class="item" data-test="pc">7. 自分の写真で試す（PC から読み込む）</button>
+      <button class="item" data-test="results">8. 結果を見る・PC に送る</button>
+    </div>
+    <p id="menu-status" class="status"></p>
+  </main>
+
+  <section id="stage" class="screen hidden" aria-live="polite">
+    <img id="still-img" alt="">
+    <video id="video-a" muted playsinline preload="auto"></video>
+    <video id="video-b" muted playsinline preload="auto"></video>
+    <div id="overlay-demo" class="hidden">
+      <div class="badge">4K HDR</div>
+      <div class="sheet">
+        <div class="sheet-title">UI の重ね表示テスト</div>
+        <div class="sheet-body">この半透明の帯と文字が写真の上に見え、下のバーが滑らかに動けば合格です。</div>
+        <div class="bar"><div class="bar-fill"></div></div>
+      </div>
+    </div>
+    <div id="hud"></div>
+    <div id="help"></div>
+  </section>
+
+  <section id="panel" class="screen hidden">
+    <h2 id="panel-title"></h2>
+    <div id="panel-controls" class="controls"></div>
+    <pre id="panel-text"></pre>
+  </section>
+
+  <script src="assets/manifest.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

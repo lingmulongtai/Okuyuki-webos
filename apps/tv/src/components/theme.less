@@ -1,0 +1,58 @@
+// Okuyuki's colors and shapes, the same as in the phone and Quest apps.
+// Sizes are in 4K units like the rest of Sandstone; they render at half size on the 1920x1080 page.
+
+@ok-ink: #08090b;
+@ok-panel: #111315;
+@ok-panel-high: #1a1e20;
+@ok-panel-highest: #222629;
+@ok-outline: #383e41;
+@ok-text: #f2f3f5;
+@ok-text-sub: #b9c2c7;
+@ok-text-dim: #879399;
+@ok-primary: #c3dde8;
+@ok-on-primary: #10232b;
+@ok-primary-container: #29404b;
+@ok-on-primary-container: #e1f2fa;
+@ok-blue: #2747e6;
+@ok-ember: #e8603f;
+@ok-success: #6fd6a6;
+@ok-error: #ffb4ab;
+@ok-error-container: #3a1f24;
+@ok-on-error-container: #ffdad6;
+
+// Whatever has the remote's focus turns near white, the way the TV's own screens do it.
+@ok-focus: #f0f2f8;
+@ok-on-focus: #0e111a;
+@ok-focus-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+
+@ok-radius-s: 18px;
+@ok-radius-m: 30px;
+@ok-radius-l: 48px;
+
+// About 5% of the screen on each side, inside the area every TV shows.
+@ok-margin-x: 192px;
+@ok-margin-y: 108px;
+
+@ok-motion: 160ms ease-out;
+
+// Japanese text: no line starts with a small kana or closing bracket, lines break between
+// phrases (Chrome 119 and later, the TV's browser on newer models) and headings even out.
+.ok-japanese() {
+	line-break: strict;
+	word-break: auto-phrase;
+}
+
+.ok-heading(@size) {
+	.ok-japanese();
+	font-size: @size;
+	font-weight: bold;
+	line-height: 1.3;
+	text-wrap: balance;
+}
+
+.ok-body(@size) {
+	.ok-japanese();
+	font-size: @size;
+	font-weight: normal;
+	line-height: 1.6;
+}
