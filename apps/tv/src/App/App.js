@@ -5,8 +5,8 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import appInfo from '../../webos-meta/appinfo.json';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
-import {packageVersion} from '../host/runtime-status';
-import {checkUpdates, isReleaseNewer} from '../host/updates';
+import {packageVersion, releaseNotice} from '../host/runtime-status';
+import {checkUpdates} from '../host/updates';
 import {deviceInfo, exitApp, launchParams, onLaunch} from '../platform/webos';
 import {Connection} from '../state/connection';
 import {Library} from '../state/library';
@@ -60,8 +60,11 @@ const AppBase = ({className, ...rest}) => {
 	}, []);
 	const updateRequest = useRef(null);
 	const runtimeRequest = useRef(null);
-	const checkForUpdates = useCallback(() => {
-		if (!updateRequest.current) {
+	const retryRelease = useRef(false);
+	const retryRuntime = useRef(false);
+	const retryCheck = useRef(null);
+	const checkForUpdates = useCallback((channel) => {
+		if (channel !== 'runtime' && !updateRequest.current) {
 			const controller = new AbortController();
 			updateRequest.current = controller;
 			const timeout = setTimeout(() => controller.abort(), 15000);
@@ -72,10 +75,16 @@ const AppBase = ({className, ...rest}) => {
 				if (updateRequest.current === controller) setUpdate({status: 'error'});
 			}).finally(() => {
 				clearTimeout(timeout);
-				if (updateRequest.current === controller) updateRequest.current = null;
+				if (updateRequest.current === controller) {
+					updateRequest.current = null;
+					if (retryRelease.current && retryCheck.current) {
+						retryRelease.current = false;
+						retryCheck.current('release');
+					}
+				}
 			});
 		}
-		if (!runtimeRequest.current) {
+		if (channel !== 'release' && !runtimeRequest.current) {
 			const request = {};
 			runtimeRequest.current = request;
 			setRuntimeStatus({status: 'checking'});
@@ -84,18 +93,43 @@ const AppBase = ({className, ...rest}) => {
 			}).catch(() => {
 				if (runtimeRequest.current === request) setRuntimeStatus({status: 'error'});
 			}).finally(() => {
-				if (runtimeRequest.current === request) runtimeRequest.current = null;
+				if (runtimeRequest.current === request) {
+					runtimeRequest.current = null;
+					if (retryRuntime.current && retryCheck.current) {
+						retryRuntime.current = false;
+						retryCheck.current('runtime');
+					}
+				}
 			});
 		}
 	}, [installedVersion]);
 	useEffect(() => {
 		let active = true;
+		let lastForegroundCheck = 0;
+		retryCheck.current = checkForUpdates;
+		const onReconnect = () => {
+			if (updateRequest.current) retryRelease.current = true;
+			if (runtimeRequest.current) retryRuntime.current = true;
+			checkForUpdates();
+		};
+		const onForeground = () => {
+			if (document.visibilityState !== 'visible' || Date.now() - lastForegroundCheck < 60000) return;
+			lastForegroundCheck = Date.now();
+			onReconnect();
+		};
+		window.addEventListener('online', onReconnect);
+		document.addEventListener('visibilitychange', onForeground);
 		Promise.resolve().then(() => {
 			if (active) checkForUpdates();
 		});
 		const timer = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
 		return () => {
 			active = false;
+			window.removeEventListener('online', onReconnect);
+			document.removeEventListener('visibilitychange', onForeground);
+			retryRelease.current = false;
+			retryRuntime.current = false;
+			retryCheck.current = null;
 			clearInterval(timer);
 			if (updateRequest.current) updateRequest.current.abort();
 			updateRequest.current = null;
@@ -215,6 +249,7 @@ const AppBase = ({className, ...rest}) => {
 				onExit={exitApp}
 				onUpdateCheck={checkForUpdates}
 				runtimeStatus={runtimeStatus}
+				runtimeUpdate={runtimeUpdate}
 			/>
 		);
 	} else if (viewer && items[viewer.index] && viewer.mode === 'video') {
@@ -256,6 +291,7 @@ const AppBase = ({className, ...rest}) => {
 				sessionVersion={status.sessionVersion}
 				settings={settings}
 				runtimeStatus={runtimeStatus}
+				runtimeUpdate={runtimeUpdate}
 				runtimeVersion={runtimeVersion}
 				installedVersion={installedVersion}
 				update={update}
@@ -263,6 +299,7 @@ const AppBase = ({className, ...rest}) => {
 		);
 	}
 
+	const updateNotice = releaseNotice(update, runtimeStatus, runtimeVersion, runtimeUpdate);
 	return (
 		<div {...rest} className={classnames(className, css.app, viewer && ready ? css.viewing : css.browsing)}>
 			{content}
@@ -271,9 +308,9 @@ const AppBase = ({className, ...rest}) => {
 					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
 				</div>
 			) : null}
-			{!runtimeUpdate && runtimeStatus.status !== 'checking' && runtimeStatus.status !== 'ready' && update.status === 'available' && isReleaseNewer(update.version, runtimeVersion) && !viewer ? (
+			{updateNotice && !viewer ? (
 				<div className={css.updateNotice} role="status">
-					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
+					{updateNotice}
 				</div>
 			) : null}
 		</div>

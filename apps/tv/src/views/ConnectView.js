@@ -134,7 +134,7 @@ const FOCUS = {
 	error: (input, phone) => (phone ? '[data-action="retry"]' : '.' + input)
 };
 
-const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck, runtimeStatus}) => {
+const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck, runtimeStatus, runtimeUpdate}) => {
 	const typing = state.status === 'idle' || state.status === 'error';
 
 	useEffect(() => onBackKey(onExit), [onExit]);
@@ -167,7 +167,7 @@ const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck
 						<span>写真はクラウドを通らず、テレビにも残りません。</span>
 					</p>
 					<Action onClick={onUpdateCheck}>更新を確認</Action>
-					<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus)}</p>
+					<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus, runtimeUpdate)}</p>
 				</div>
 			</div>
 			<div className={css.side}>
