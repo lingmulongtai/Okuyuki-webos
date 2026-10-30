@@ -1,6 +1,6 @@
 {
   "name": "okuyuki-tv",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Okuyuki TV: view phone photos and videos on LG webOS TVs",
   "main": "src/index.js",
   "private": true,
