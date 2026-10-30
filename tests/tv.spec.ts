@@ -94,6 +94,19 @@ test.beforeEach(async ({ request }) => {
 	await mock(request, 'reset');
 });
 
+test('announces a published update before connecting a phone', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', async (route) => {
+		await route.fulfill({
+			status: 200,
+			headers: { 'access-control-allow-origin': '*' },
+			json: [{ tag_name: 'v0.2.0', draft: false, assets: [{ name: 'com.okuyuki.tv_0.2.0_all.ipk', state: 'uploaded' }] }]
+		});
+	});
+	await launch(page, null);
+	await expect(page.getByRole('status')).toContainText('Okuyuki TV 0.2.0');
+	await expect(page.getByRole('status')).toContainText('PC');
+});
+
 test('pairs with the phone and shows its library', async ({ page, request }) => {
 	const errors = trackErrors(page);
 	await launch(page);
