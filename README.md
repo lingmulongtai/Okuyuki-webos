@@ -14,7 +14,7 @@ Companion: [Okuyuki-android](https://github.com/lingmulongtai/Okuyuki-android) �
 
 仕様は [docs/SPEC.md](docs/SPEC.md)、スマホとの通信は [protocol/README.md](protocol/README.md) にあります。
 
-[TV 用 IPK をダウンロード](https://github.com/lingmulongtai/Okuyuki-webos/releases/download/v0.1.4-alpha.1-preview/com.okuyuki.tv_0.1.4_all.ipk) · [Android 用 APK](https://github.com/lingmulongtai/Okuyuki-android/releases/download/v0.1.0-alpha.13-preview/Okuyuki-android-v0.1.0-alpha.13-preview.apk) · [導入・接続手順](docs/TV.md)
+[TV 用 IPK をダウンロード](https://github.com/lingmulongtai/Okuyuki-webos/releases/download/v0.1.5-alpha.1-preview/com.okuyuki.tv_0.1.5_all.ipk) · [Android 用 APK](https://github.com/lingmulongtai/Okuyuki-android/releases/download/v0.1.0-alpha.13-preview/Okuyuki-android-v0.1.0-alpha.13-preview.apk) · [導入・接続手順](docs/TV.md)
 
 互換性のある画面更新はテレビ単体で取得し、次回起動時に適用します。IPK 自体の更新が必要な場合は PC 用補助ツールもあります。詳しくは [更新手順](docs/TV.md#アプリの更新) を参照してください。
 
