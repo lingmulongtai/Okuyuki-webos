@@ -32,6 +32,10 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         let navigations = 0;
         page.on('pageerror', error => errors.push(error.message));
         page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
+        await page.addInitScript(() => {
+            window.okuyukiTestStarts = 0;
+            window.addEventListener('okuyuki-runtime-started', () => { window.okuyukiTestStarts++; });
+        });
         await page.goto(pathToFileURL(join(root, 'index.html')).href);
         await page.waitForFunction(() => document.getElementById('root').hasChildNodes());
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('確認できませんでした'));
@@ -44,7 +48,7 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await page.waitForFunction(() => window.okuyukiRuntimeUpdateReady === '0.1.2');
         const previousNavigations = navigations;
         const releaseCheck = page.waitForResponse(response => response.url().startsWith('https://api.github.com/'));
-        await page.reload();
+        await page.getByRole('button', {name: '今すぐ適用'}).click();
         await releaseCheck;
         try {
             await page.waitForFunction(() => window.okuyukiRuntimeVersion === '0.1.2');
@@ -60,6 +64,7 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
             })).catch(() => ({page: 'unavailable'}));
             throw new Error(`Runtime activation failed: ${JSON.stringify({state, errors, navigations, previousNavigations})}`, {cause: error});
         }
+        await page.waitForFunction(() => window.okuyukiTestStarts > 0);
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('適用済み'));
         await page.waitForTimeout(2500); // The shell accepts the update only after two stable seconds.
         assert.equal(await page.evaluate(() => window.okuyukiRuntimeVersion), '0.1.2');
