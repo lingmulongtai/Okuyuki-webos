@@ -29,7 +29,9 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await context.route('https://api.github.com/**', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: [{tag_name: release, draft: false, assets: [{name: 'com.okuyuki.tv.ipk', state: 'uploaded'}]}]}));
         const page = await context.newPage();
         const errors = [];
+        let navigations = 0;
         page.on('pageerror', error => errors.push(error.message));
+        page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
         await page.goto(pathToFileURL(join(root, 'index.html')).href);
         await page.waitForFunction(() => document.getElementById('root').hasChildNodes());
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('確認できませんでした'));
@@ -39,11 +41,29 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
             const request = indexedDB.open('okuyuki-tv-runtime', 1);
             request.onsuccess = () => { const get = request.result.transaction('state').objectStore('state').get('candidate'); get.onsuccess = () => resolveCandidate(!!get.result); };
         }));
+        await page.waitForFunction(() => window.okuyukiRuntimeUpdateReady === '0.1.2');
+        const previousNavigations = navigations;
         const releaseCheck = page.waitForResponse(response => response.url().startsWith('https://api.github.com/'));
         await page.reload();
         await releaseCheck;
-        await page.waitForFunction(() => window.okuyukiRuntimeVersion === '0.1.2');
+        try {
+            await page.waitForFunction(() => window.okuyukiRuntimeVersion === '0.1.2');
+        } catch (error) {
+            const state = await page.evaluate(() => new Promise(resolveState => {
+                const request = indexedDB.open('okuyuki-tv-runtime', 1);
+                request.onerror = () => resolveState({storage: 'unavailable'});
+                request.onsuccess = () => {
+                    const store = request.result.transaction('state').objectStore('state');
+                    const candidate = store.get('candidate'); const highWater = store.get('highWater');
+                    highWater.onsuccess = () => resolveState({candidate: Boolean(candidate.result), highWater: highWater.result, runtime: window.okuyukiRuntimeVersion, recovery: sessionStorage.getItem('okuyuki-runtime-recovery')});
+                };
+            })).catch(() => ({page: 'unavailable'}));
+            throw new Error(`Runtime activation failed: ${JSON.stringify({state, errors, navigations, previousNavigations})}`, {cause: error});
+        }
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('適用済み'));
+        await page.waitForTimeout(2500); // The shell accepts the update only after two stable seconds.
+        assert.equal(await page.evaluate(() => window.okuyukiRuntimeVersion), '0.1.2');
+        assert.equal(navigations, previousNavigations + 1);
         assert.equal(await page.evaluate(() => window.okuyukiUpdateConfig.version), '0.1.1');
         assert.match(await page.locator('#root').innerText(), /スマホ|接続/);
         assert.doesNotMatch(await page.locator('body').innerText(), /IPK 再導入が必要/);
