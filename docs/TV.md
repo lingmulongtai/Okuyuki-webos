@@ -51,8 +51,8 @@ npm run tv:auto-update -- --device myTV
    npm ci
    npm run tv:install
    npm run tv:build
-   npm run tv:package        # dist/com.okuyuki.tv_0.1.0_all.ipk
-   ares-install --device c5 dist/com.okuyuki.tv_0.1.0_all.ipk
+   npm run tv:package        # dist/com.okuyuki.tv_0.1.2_all.ipk
+   ares-install --device c5 dist/com.okuyuki.tv_0.1.2_all.ipk
    ```
 
 3. PC でモックホストを起動します。ffmpeg が必要です（Windows なら `winget install Gyan.FFmpeg`）。
