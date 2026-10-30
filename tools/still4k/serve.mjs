@@ -95,6 +95,12 @@ const server = createServer(async (req, res) => {
 			return;
 		}
 		const url = new URL(req.url, 'http://localhost');
+		// Lets the browser tests wait for this server even before the TV app is built.
+		if (url.pathname === '/__health') {
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end('ok');
+			return;
+		}
 		if (req.method === 'POST' && url.pathname === '/results') {
 			await saveResults(req, res);
 			return;

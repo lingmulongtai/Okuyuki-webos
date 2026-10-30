@@ -1,0 +1,353 @@
+@import '../components/theme.less';
+
+// Room around each thumbnail for it to grow and show its focus ring inside its own cell.
+@tile-inset: 24px;
+@caption-height: 96px;
+
+.view {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	padding-top: 96px;
+	box-sizing: border-box;
+	background-color: @ok-ink;
+	color: @ok-text;
+}
+
+.header {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: space-between;
+	height: 132px;
+	margin: 0 @ok-margin-x;
+	padding: 0 48px;
+	border-radius: @ok-radius-l;
+	background: linear-gradient(180deg, @ok-panel-highest, @ok-panel);
+}
+
+.heading {
+	display: flex;
+	align-items: center;
+	gap: 36px;
+}
+
+.mark {
+	width: 84px;
+	height: 84px;
+}
+
+.title {
+	margin: 0;
+	font-size: 84px;
+	font-weight: bold;
+	line-height: 1;
+}
+
+.count {
+	padding-top: 12px;
+	color: @ok-text-sub;
+	font-size: 52px;
+}
+
+.tools {
+	display: flex;
+	align-items: center;
+	gap: 36px;
+}
+
+.phone {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	height: 96px;
+	padding: 0 48px;
+	border-radius: 48px;
+	background-color: @ok-panel-high;
+	color: @ok-text-sub;
+	font-size: 46px;
+	white-space: nowrap;
+}
+
+.dot {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background-color: @ok-success;
+}
+
+.filters {
+	display: flex;
+	flex: none;
+	gap: 30px;
+	padding: 54px @ok-margin-x 30px;
+}
+
+.body {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	padding: 0 (@ok-margin-x - @tile-inset);
+}
+
+.grid {
+	height: 100%;
+}
+
+.tile {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	padding: @tile-inset;
+	cursor: pointer;
+	outline: none;
+}
+
+.picture {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: calc(100% - @caption-height);
+	overflow: hidden;
+	border-radius: @ok-radius-m;
+	background-color: @ok-panel-high;
+	color: @ok-text-dim;
+	transition: transform @ok-motion, box-shadow @ok-motion;
+
+	.tile:focus & {
+		box-shadow: 0 0 0 8px @ok-focus, @ok-focus-shadow;
+		transform: scale(1.04);
+	}
+}
+
+.thumb {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0;
+	transition: opacity 240ms ease-out;
+}
+
+.loaded {
+	opacity: 1;
+}
+
+.missing {
+	width: 120px;
+	height: 120px;
+}
+
+.marks {
+	position: absolute;
+	top: 24px;
+	right: 24px;
+	display: flex;
+	gap: 12px;
+}
+
+.badge {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 60px;
+	padding: 0 18px;
+	border-radius: 15px;
+	background-color: rgba(11, 13, 18, 0.74);
+	color: @ok-text;
+	font-size: 40px;
+	font-weight: bold;
+	letter-spacing: 0.04em;
+	line-height: 1;
+}
+
+.duration {
+	position: absolute;
+	bottom: 24px;
+	left: 24px;
+	padding-left: 12px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0;
+}
+
+.play {
+	width: 36px;
+	height: 36px;
+}
+
+.caption {
+	height: @caption-height;
+	padding: 0 6px;
+	overflow: hidden;
+	color: @ok-text-sub;
+	font-size: 48px;
+	line-height: @caption-height;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+
+	.tile:focus & {
+		color: @ok-text;
+	}
+}
+
+.message {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 36px;
+	padding: 0 @ok-margin-x 180px;
+	text-align: center;
+}
+
+.bubble {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 192px;
+	height: 192px;
+	margin-bottom: 12px;
+	border-radius: 50%;
+	background-color: @ok-primary-container;
+	color: @ok-on-primary-container;
+}
+
+.error {
+	background-color: @ok-error-container;
+	color: @ok-error;
+}
+
+.bubbleGlyph {
+	width: 96px;
+	height: 96px;
+}
+
+.spinner {
+	margin: 0;
+}
+
+.messageTitle {
+	.ok-heading(72px);
+	margin: 0;
+}
+
+.messageBody {
+	.ok-body(52px);
+	max-width: 2000px;
+	margin: 0 0 24px;
+	color: @ok-text-sub;
+	text-wrap: balance;
+}
+
+// Popups: Sandstone draws them in its own layer and lets the screen behind show through; these
+// are solid, like the TV's own menus.
+:global(.sandstone-theme) .dialog:global(.neutral),
+:global(.sandstone-theme) .sheet:global(.neutral) {
+	background-color: @ok-panel-high;
+	color: @ok-text;
+}
+
+.dialog {
+	border-radius: @ok-radius-l;
+}
+
+.confirm {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 48px;
+	min-width: 1500px;
+	padding: 72px 96px 48px;
+	text-align: center;
+}
+
+.confirmMark {
+	width: 120px;
+	height: 120px;
+}
+
+.confirmTitle {
+	.ok-heading(72px);
+	margin: 0;
+}
+
+.confirmButtons {
+	display: flex;
+	gap: 36px;
+	margin-top: 12px;
+}
+
+.settings {
+	display: flex;
+	flex-direction: column;
+	gap: 60px;
+	box-sizing: border-box;
+	width: 1440px;
+	height: 100%;
+	padding: 60px 48px;
+	overflow-y: auto;
+}
+
+.sheetTitle {
+	.ok-heading(84px);
+	margin: 0;
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 24px;
+}
+
+.groupTitle {
+	margin: 0;
+	color: @ok-text-sub;
+	font-size: 46px;
+	font-weight: 600;
+}
+
+// SwitchItem brings its own inset; the group lines everything up on the left instead.
+.group .switch {
+	align-self: stretch;
+	margin: 0 -36px;
+}
+
+.note {
+	.ok-body(44px);
+	margin: 0;
+	color: @ok-text-sub;
+}
+
+.device {
+	display: flex;
+	align-items: center;
+	gap: 36px;
+}
+
+.deviceGlyph {
+	width: 84px;
+	height: 84px;
+	color: @ok-primary;
+}
+
+.deviceName {
+	font-size: 56px;
+	font-weight: 600;
+}
+
+.disconnect {
+	margin: 12px 0;
+}
