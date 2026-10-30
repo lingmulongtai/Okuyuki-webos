@@ -271,7 +271,7 @@ const AppBase = ({className, ...rest}) => {
 					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
 				</div>
 			) : null}
-			{!runtimeUpdate && update.status === 'available' && isReleaseNewer(update.version, runtimeVersion) && !viewer ? (
+			{!runtimeUpdate && runtimeStatus.status !== 'checking' && runtimeStatus.status !== 'ready' && update.status === 'available' && isReleaseNewer(update.version, runtimeVersion) && !viewer ? (
 				<div className={css.updateNotice} role="status">
 					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
 				</div>
