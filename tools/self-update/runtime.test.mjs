@@ -32,12 +32,17 @@ test('file-origin runtime verifies, stages, restarts offline and rejects tamperi
             const request = indexedDB.open('okuyuki-tv-runtime', 1);
             request.onsuccess = () => { const get = request.result.transaction('state').objectStore('state').get('candidate'); get.onsuccess = () => resolve(!!get.result); };
         }));
+        assert.deepEqual(await page.evaluate(() => window.okuyukiCheckRuntimeUpdate()), {status: 'ready', version: '0.1.3'});
         response = null;
         await page.reload();
         await page.waitForFunction(() => document.getElementById('root').textContent === 'UPDATED');
         assert.equal(await page.evaluate(() => location.protocol), 'file:');
         assert.equal(await page.evaluate(() => localStorage.getItem('pairing-test')), 'preserved');
         assert.equal(await page.evaluate(() => getComputedStyle(document.body).color), 'rgb(255, 0, 0)');
+        assert.deepEqual(await page.evaluate(() => window.okuyukiCheckRuntimeUpdate()), {status: 'error'});
+
+        response = createBundle({version: '0.1.4', shell: 'b'.repeat(64), javascript: 'void 0;', css: 'body{}'}, keys.privateKey);
+        assert.deepEqual(await page.evaluate(() => window.okuyukiCheckRuntimeUpdate()), {status: 'incompatible'});
 
         const attacker = generateKeyPairSync('ec', {namedCurve: 'prime256v1'});
         response = createBundle({version: '0.1.4', shell, javascript: 'document.getElementById("root").textContent="ATTACK";', css: 'body{color:green}'}, attacker.privateKey);
@@ -84,6 +89,12 @@ test('file-origin runtime verifies, stages, restarts offline and rejects tamperi
         assert.equal(await protectedPage.evaluate(() => sessionStorage.getItem('okuyuki-runtime-recovery')), '1');
         await protectedPage.reload();
         await protectedPage.waitForFunction(() => document.getElementById('root').textContent === 'PACKAGED');
+        assert.deepEqual(await protectedPage.evaluate(() => window.okuyukiCheckRuntimeUpdate()), {status: 'error'});
+        response = createBundle({version: '0.1.5', shell, javascript: 'document.getElementById("root").textContent="RECOVERED";window.dispatchEvent(new Event("okuyuki-runtime-started"));', css: 'body{color:green}'}, keys.privateKey);
+        assert.deepEqual(await protectedPage.evaluate(() => window.okuyukiCheckRuntimeUpdate()), {status: 'ready', version: '0.1.5'});
+        assert.equal(await protectedPage.evaluate(() => sessionStorage.getItem('okuyuki-runtime-recovery')), null);
+        await protectedPage.reload();
+        await protectedPage.waitForFunction(() => document.getElementById('root').textContent === 'RECOVERED', null, {timeout: 25000});
         await blocked.close();
 
         // Concurrent checks cannot replace a newer staged update with an older signed one.

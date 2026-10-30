@@ -37,7 +37,7 @@
 		const key = await crypto.subtle.importKey('spki', bytes(config.publicKey, 256), {name: 'ECDSA', namedCurve: 'P-256'}, false, ['verify']);
 		if (!await crypto.subtle.verify({name: 'ECDSA', hash: 'SHA-256'}, key, signature, payload)) throw new Error('Invalid signature');
 		const item = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(payload));
-		if (item.schema !== 1 || item.shell !== config.shell || !newer(item.version, config.version)) throw new Error('Incompatible update');
+		if (item.schema !== 1 || item.shell !== config.shell || !version(item.version)) throw new Error('Incompatible update');
 		return {version: item.version, javascript: bytes(item.javascript, maximumSource), css: bytes(item.css, maximumSource)};
 	}
 	function openDatabase () {
@@ -179,29 +179,50 @@
 			clearTimeout(timer);
 		}
 	}
-	async function check () {
+	let checking;
+	async function checkOnce () {
 		try {
+			if (!database) return {status: 'unavailable'};
 			const envelope = await fetchBounded(); const item = await verified(envelope);
-			if (await save(envelope, item.version)) {
+			if (!newer(item.version, runningVersion)) return {status: 'current'};
+			const saved = await bounded(save(envelope, item.version), 5000);
+			const staged = saved || await bounded(read('candidate'), 5000) === envelope;
+			if (staged) {
+				if (!saved && recoveryFlag()) return {status: 'error'};
+				if (saved) recoveryFlag(false);
 				window.okuyukiRuntimeUpdateReady = item.version;
 				window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: item.version}));
+				return {status: 'ready', version: item.version};
 			}
-		} catch (_) { /* Network, storage, signature or compatibility failure: keep the installed app. */ }
+			return {status: 'current'};
+		} catch (error) {
+			return {status: error.message === 'Incompatible update' ? 'incompatible' : 'error'};
+		}
 	}
+	function check () {
+		if (!checking) checking = checkOnce().finally(() => {
+			checking = null;
+		});
+		return checking;
+	}
+	window.okuyukiCheckRuntimeUpdate = check;
 	async function start () {
 		try {
 			database = await bounded(openDatabase(), 3000);
 			if (recoveryFlag()) {
 				packaged();
+				check(); setInterval(check, updateInterval);
 				return;
 			}
 			const envelope = await bounded(read('candidate'), 5000);
 			if (envelope) {
 				try {
 					const item = await bounded(verified(envelope), 10000); const highWater = await bounded(read('highWater'), 5000);
-					if (highWater !== item.version) throw new Error('Rollback refused');
+					if (highWater !== item.version || !newer(item.version, config.version)) throw new Error('Rollback refused');
+					window.okuyukiRuntimeVersion = item.version;
 					await launch(item); runningVersion = item.version; window.okuyukiRuntimeVersion = item.version;
 				} catch (_) {
+					window.okuyukiRuntimeVersion = config.version;
 					const guarded = recoveryFlag(true);
 					const removed = await Promise.race([removeCandidate(envelope).catch(() => false), new Promise(resolve => setTimeout(() => resolve(false), 3000))]);
 					if (removed) recoveryFlag(false);
