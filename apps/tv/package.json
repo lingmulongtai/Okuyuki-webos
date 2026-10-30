@@ -1,6 +1,6 @@
 {
   "name": "okuyuki-tv",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Okuyuki TV: view phone photos and videos on LG webOS TVs",
   "main": "src/index.js",
   "private": true,
@@ -8,7 +8,7 @@
   "scripts": {
     "serve": "enact serve",
     "pack": "enact pack",
-    "pack-p": "enact pack -p && node scripts/prune-locales.mjs dist",
+    "pack-p": "enact pack -p && node scripts/prune-locales.mjs dist && node scripts/install-bootstrap.mjs dist",
     "clean": "enact clean",
     "lint": "enact lint --strict .",
     "test": "enact test"

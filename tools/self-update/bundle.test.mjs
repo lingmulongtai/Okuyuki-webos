@@ -29,7 +29,13 @@ test('asset fingerprint changes when a packaged dependency changes', async () =>
         await mkdir(join(root, 'resources'));
         await writeFile(join(root, 'node_modules', 'font'), 'a');
         await writeFile(join(root, 'resources', 'locale'), 'b');
+        for (const name of ['icon.png', 'largeIcon.png', 'splash.png']) await writeFile(join(root, name), name);
+        await writeFile(join(root, 'index.html'), '<html><link href="main.css" rel="stylesheet"/><script defer="defer" src="main.js"></script></html>');
+        await writeFile(join(root, 'appinfo.json'), '{"id":"com.okuyuki.tv","version":"0.1.2"}');
         const first = await shellFingerprint(root);
+        assert.equal(first, await shellFingerprint(root));
+        await writeFile(join(root, 'index.html'), '<html><script defer="defer" src="bootstrap.js"></script></html>');
+        await writeFile(join(root, 'appinfo.json'), '{"id":"com.okuyuki.tv","version":"0.1.3"}');
         assert.equal(first, await shellFingerprint(root));
         await writeFile(join(root, 'resources', 'locale'), 'c');
         assert.notEqual(first, await shellFingerprint(root));
@@ -37,6 +43,7 @@ test('asset fingerprint changes when a packaged dependency changes', async () =>
     } finally {
         await rm(join(root, 'node_modules', 'font'), {force: true});
         await rm(join(root, 'resources', 'locale'), {force: true});
+        for (const name of ['index.html', 'appinfo.json', 'icon.png', 'largeIcon.png', 'splash.png']) await rm(join(root, name), {force: true});
         await rmdir(join(root, 'node_modules'));
         await rmdir(join(root, 'resources'));
         await rmdir(root);

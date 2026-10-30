@@ -50,6 +50,10 @@ const AppBase = ({className, ...rest}) => {
 	const libraryState = useStore(library);
 	const [settings, setSettings] = useState(loadSettings);
 	const [update, setUpdate] = useState({status: 'checking'});
+	const [runtimeUpdate, setRuntimeUpdate] = useState(() => typeof window === 'undefined' ? null : window.okuyukiRuntimeUpdateReady || null);
+	useEffect(() => {
+		window.dispatchEvent(new Event('okuyuki-runtime-started'));
+	}, []);
 	const updateRequest = useRef(null);
 	const checkForUpdates = useCallback(async () => {
 		if (updateRequest.current) return;
@@ -76,6 +80,12 @@ const AppBase = ({className, ...rest}) => {
 			updateRequest.current = null;
 		};
 	}, [checkForUpdates]);
+	useEffect(() => {
+		const onRuntimeReady = (event) => setRuntimeUpdate(event.detail);
+		window.addEventListener('okuyuki-runtime-ready', onRuntimeReady);
+		if (window.okuyukiRuntimeUpdateReady) setRuntimeUpdate(window.okuyukiRuntimeUpdateReady);
+		return () => window.removeEventListener('okuyuki-runtime-ready', onRuntimeReady);
+	}, []);
 	// {session, list: Item[] | null (null: the library's current list), index, mode: 'photo' | 'video', fromGrid}
 	const [viewerState, setViewer] = useState(null);
 	// {session, index}: the grid item to focus when the grid comes back.
@@ -220,7 +230,12 @@ const AppBase = ({className, ...rest}) => {
 	return (
 		<div {...rest} className={classnames(className, css.app, viewer && ready ? css.viewing : css.browsing)}>
 			{content}
-			{update.status === 'available' && !viewer ? (
+			{runtimeUpdate && !viewer ? (
+				<div className={css.updateNotice} role="status">
+					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
+				</div>
+			) : null}
+			{!runtimeUpdate && update.status === 'available' && !viewer ? (
 				<div className={css.updateNotice} role="status">
 					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
 				</div>
