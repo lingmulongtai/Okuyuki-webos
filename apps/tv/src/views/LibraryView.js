@@ -8,12 +8,12 @@ import ri from '@enact/ui/resolution';
 import classnames from 'classnames';
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-import appInfo from '../../webos-meta/appinfo.json';
 import Action from '../components/Action';
 import {BrandMark} from '../components/Brand';
 import Copy from '../components/Copy';
 import {shortDate, tileBadges} from '../components/format';
 import Glyph from '../components/Glyph';
+import {runtimeMessage} from '../host/runtime-status';
 import {onBackKey} from '../platform/webos';
 
 import css from './LibraryView.module.less';
@@ -137,7 +137,7 @@ function updateMessage (update) {
 	return '最新版です。';
 }
 
-const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, settings, update}) => {
+const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, settings, update, runtimeStatus, runtimeVersion, installedVersion}) => {
 	const toggleBestQuality = useCallback(() => {
 		onSettings({...settings, bestQuality: !settings.bestQuality});
 	}, [onSettings, settings]);
@@ -171,10 +171,11 @@ const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, sett
 			</section>
 			<section className={css.group}>
 				<h3 className={css.groupTitle}>このアプリについて</h3>
-				<p className={css.note}>{'Okuyuki TV ' + appInfo.version}</p>
-				<p className={css.note}>{updateMessage(update)}</p>
+				<p className={css.note}>{'画面 ' + runtimeVersion + ' / インストール済み IPK ' + installedVersion}</p>
+				<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus)}</p>
+				<p className={css.note}>{'IPK: ' + updateMessage(update)}</p>
 				<Action onClick={onUpdateCheck}>更新を確認</Action>
-				<p className={css.note}>開発版の更新は PC の開発者ツールからインストールします。</p>
+				<p className={css.note}>互換性のある画面更新はテレビ単体で取得します。IPK 自体の更新には PC が必要です。</p>
 			</section>
 		</div>
 	);
@@ -194,6 +195,9 @@ const LibraryView = ({
 	phone,
 	sessionVersion,
 	settings,
+	runtimeStatus,
+	runtimeVersion,
+	installedVersion,
 	update
 }) => {
 	const list = library.lists[library.filter];
@@ -303,6 +307,9 @@ const LibraryView = ({
 					onUpdateCheck={onUpdateCheck}
 					phone={phone}
 					settings={settings}
+					runtimeStatus={runtimeStatus}
+					runtimeVersion={runtimeVersion}
+					installedVersion={installedVersion}
 					update={update}
 				/>
 			</Popup>

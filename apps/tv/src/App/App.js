@@ -5,6 +5,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import appInfo from '../../webos-meta/appinfo.json';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
+import {packageVersion} from '../host/runtime-status';
 import {checkUpdates} from '../host/updates';
 import {deviceInfo, exitApp, launchParams, onLaunch} from '../platform/webos';
 import {Connection} from '../state/connection';
@@ -51,6 +52,9 @@ const AppBase = ({className, ...rest}) => {
 	const [settings, setSettings] = useState(loadSettings);
 	const [update, setUpdate] = useState({status: 'checking'});
 	const [runtimeUpdate, setRuntimeUpdate] = useState(() => typeof window === 'undefined' ? null : window.okuyukiRuntimeUpdateReady || null);
+	const [runtimeStatus, setRuntimeStatus] = useState({status: 'checking'});
+	const [runtimeVersion] = useState(() => window.okuyukiRuntimeVersion || appInfo.version);
+	const [installedVersion] = useState(() => packageVersion(window.okuyukiUpdateConfig, appInfo.version));
 	useEffect(() => {
 		window.dispatchEvent(new Event('okuyuki-runtime-started'));
 	}, []);
@@ -61,16 +65,26 @@ const AppBase = ({className, ...rest}) => {
 		updateRequest.current = controller;
 		const timeout = setTimeout(() => controller.abort(), 15000);
 		setUpdate({status: 'checking'});
+		setRuntimeStatus({status: 'checking'});
 		try {
-			const found = await checkUpdates(appInfo.version, controller.signal);
-			if (updateRequest.current === controller) setUpdate(found ? {status: 'available', version: found.version} : {status: 'current'});
+			const runtime = typeof window.okuyukiCheckRuntimeUpdate === 'function' ? window.okuyukiCheckRuntimeUpdate() : Promise.resolve({status: 'unavailable'});
+			const [release, contentResult] = await Promise.allSettled([checkUpdates(installedVersion, controller.signal), runtime]);
+			if (updateRequest.current === controller) {
+				let releaseState = {status: 'error'};
+				if (release.status === 'fulfilled') releaseState = release.value ? {status: 'available', version: release.value.version} : {status: 'current'};
+				setUpdate(releaseState);
+				setRuntimeStatus(contentResult.status === 'fulfilled' ? contentResult.value : {status: 'error'});
+			}
 		} catch (error) {
-			if (updateRequest.current === controller) setUpdate({status: 'error'});
+			if (updateRequest.current === controller) {
+				setUpdate({status: 'error'});
+				setRuntimeStatus({status: 'error'});
+			}
 		} finally {
 			clearTimeout(timeout);
 			if (updateRequest.current === controller) updateRequest.current = null;
 		}
-	}, []);
+	}, [installedVersion]);
 	useEffect(() => {
 		checkForUpdates();
 		const timer = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
@@ -81,7 +95,10 @@ const AppBase = ({className, ...rest}) => {
 		};
 	}, [checkForUpdates]);
 	useEffect(() => {
-		const onRuntimeReady = (event) => setRuntimeUpdate(event.detail);
+		const onRuntimeReady = (event) => {
+			setRuntimeUpdate(event.detail);
+			setRuntimeStatus({status: 'ready', version: event.detail});
+		};
 		window.addEventListener('okuyuki-runtime-ready', onRuntimeReady);
 		if (window.okuyukiRuntimeUpdateReady) setRuntimeUpdate(window.okuyukiRuntimeUpdateReady);
 		return () => window.removeEventListener('okuyuki-runtime-ready', onRuntimeReady);
@@ -182,6 +199,8 @@ const AppBase = ({className, ...rest}) => {
 				onConnect={handleConnect}
 				onRetry={handleRetry}
 				onExit={exitApp}
+				onUpdateCheck={checkForUpdates}
+				runtimeStatus={runtimeStatus}
 			/>
 		);
 	} else if (viewer && items[viewer.index] && viewer.mode === 'video') {
@@ -222,6 +241,9 @@ const AppBase = ({className, ...rest}) => {
 				phone={status.phone}
 				sessionVersion={status.sessionVersion}
 				settings={settings}
+				runtimeStatus={runtimeStatus}
+				runtimeVersion={runtimeVersion}
+				installedVersion={installedVersion}
 				update={update}
 			/>
 		);
