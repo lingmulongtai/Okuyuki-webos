@@ -5,6 +5,15 @@ import {mkdtemp, mkdir, readFile, rm, rmdir, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createBundle, shellFingerprint, verifyBundle} from './bundle.mjs';
+import {requireCompatibleShell} from './compatibility.mjs';
+
+test('rejects a release with a different or malformed required shell', () => {
+    const expected = 'a'.repeat(64);
+    assert.doesNotThrow(() => requireCompatibleShell(expected, expected));
+    assert.doesNotThrow(() => requireCompatibleShell(expected));
+    assert.throws(() => requireCompatibleShell('b'.repeat(64), expected));
+    assert.throws(() => requireCompatibleShell(expected, 'invalid'));
+});
 
 test('signs exact runtime bytes and refuses tampering or another signing identity', () => {
     const keys = generateKeyPairSync('ec', {namedCurve: 'prime256v1'});
