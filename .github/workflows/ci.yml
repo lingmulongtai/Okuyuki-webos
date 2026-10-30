@@ -73,10 +73,12 @@ jobs:
       - run: npm run tv:install
       - run: npm run check
       - run: npm run tv:update-test
+      - run: npm run tv:self-update-test
       - run: npm run tv:lint
       - run: npm run tv:test
       - run: npm run tv:build
       - run: npx playwright install --with-deps chromium
+      - run: npm run tv:self-update-browser-test
       - run: npm run test:tv
       - run: npm run tv:package
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
