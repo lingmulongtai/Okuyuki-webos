@@ -339,6 +339,7 @@ test('keeps photos at standard quality when best quality is off', async ({ page,
 	await page.getByRole('button', { name: '設定' }).click();
 	await page.getByText('写真を最高画質（4K）で表示する').click();
 	await expect(page.getByText(`Okuyuki TV ${appVersion}`)).toBeVisible();
+	await expect(page.getByText(`インストール済み IPK ${appVersion}`)).toBeVisible();
 	await screenshot(page, 'tv-settings');
 	await page.keyboard.press('Escape');
 	await gridItems(page).first().click();

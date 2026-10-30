@@ -171,7 +171,8 @@ const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, sett
 			</section>
 			<section className={css.group}>
 				<h3 className={css.groupTitle}>このアプリについて</h3>
-				<p className={css.note}>{'画面 ' + runtimeVersion + ' / インストール済み IPK ' + installedVersion}</p>
+				<p className={css.note}>{'Okuyuki TV ' + runtimeVersion}</p>
+				<p className={css.note}>{'インストール済み IPK ' + installedVersion}</p>
 				<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus)}</p>
 				<p className={css.note}>{'IPK: ' + updateMessage(update)}</p>
 				<Action onClick={onUpdateCheck}>更新を確認</Action>
