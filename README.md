@@ -10,9 +10,13 @@ Companion: [Okuyuki-android](https://github.com/lingmulongtai/Okuyuki-android) �
 | アプリ | 内容 | 状態 |
 | --- | --- | --- |
 | [4K 静止画テスト](docs/STILL4K.md)（`com.okuyuki.still4k`） | 4K の静止画動画が 1080p の画像より精細に見えるか、HDR、切り替え速度、UI の重ね表示をテレビで確かめる | 実機での確認待ち |
-| [Okuyuki TV](docs/TV.md)（`com.okuyuki.tv`） | スマホの写真と動画の一覧、写真の 4K 表示、動画の再生、スマホからの表示指示 | スマホ側の対応待ち。PC の写真でモックホストを使って試せます |
+| [Okuyuki TV](docs/TV.md)（`com.okuyuki.tv`） | スマホの写真と動画の一覧、写真の 4K 表示、動画の再生 | Android alpha.13 と接続するプレビュー。実機での確認待ち |
 
 仕様は [docs/SPEC.md](docs/SPEC.md)、スマホとの通信は [protocol/README.md](protocol/README.md) にあります。
+
+[TV 用 IPK をダウンロード](https://github.com/lingmulongtai/Okuyuki-webos/releases/download/v0.1.1-alpha.1-preview/com.okuyuki.tv_0.1.1_all.ipk) · [Android 用 APK](https://github.com/lingmulongtai/Okuyuki-android/releases/download/v0.1.0-alpha.13-preview/Okuyuki-android-v0.1.0-alpha.13-preview.apk) · [導入・接続手順](docs/TV.md)
+
+PC が起動している間にテレビへの更新を自動確認・導入する補助ツールもあります。テレビ単体の自動インストールは未対応です。詳しくは [更新手順](docs/TV.md#アプリの更新) を参照してください。
 
 ## 開発
 
