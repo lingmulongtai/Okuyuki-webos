@@ -1,9 +1,11 @@
 import ThemeDecorator from '@enact/sandstone/ThemeDecorator';
 import classnames from 'classnames';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
+import appInfo from '../../webos-meta/appinfo.json';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
+import {checkUpdates} from '../host/updates';
 import {deviceInfo, exitApp, launchParams, onLaunch} from '../platform/webos';
 import {Connection} from '../state/connection';
 import {Library} from '../state/library';
@@ -47,6 +49,33 @@ const AppBase = ({className, ...rest}) => {
 	const status = useStore(connection);
 	const libraryState = useStore(library);
 	const [settings, setSettings] = useState(loadSettings);
+	const [update, setUpdate] = useState({status: 'checking'});
+	const updateRequest = useRef(null);
+	const checkForUpdates = useCallback(async () => {
+		if (updateRequest.current) return;
+		const controller = new AbortController();
+		updateRequest.current = controller;
+		const timeout = setTimeout(() => controller.abort(), 15000);
+		setUpdate({status: 'checking'});
+		try {
+			const found = await checkUpdates(appInfo.version, controller.signal);
+			if (updateRequest.current === controller) setUpdate(found ? {status: 'available', version: found.version} : {status: 'current'});
+		} catch (error) {
+			if (updateRequest.current === controller) setUpdate({status: 'error'});
+		} finally {
+			clearTimeout(timeout);
+			if (updateRequest.current === controller) updateRequest.current = null;
+		}
+	}, []);
+	useEffect(() => {
+		checkForUpdates();
+		const timer = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+		return () => {
+			clearInterval(timer);
+			if (updateRequest.current) updateRequest.current.abort();
+			updateRequest.current = null;
+		};
+	}, [checkForUpdates]);
 	// {session, list: Item[] | null (null: the library's current list), index, mode: 'photo' | 'video', fromGrid}
 	const [viewerState, setViewer] = useState(null);
 	// {session, index}: the grid item to focus when the grid comes back.
@@ -179,9 +208,11 @@ const AppBase = ({className, ...rest}) => {
 				onLoadMore={handleLoadMore}
 				onOpen={handleOpen}
 				onSettings={handleSettings}
+				onUpdateCheck={checkForUpdates}
 				phone={status.phone}
 				sessionVersion={status.sessionVersion}
 				settings={settings}
+				update={update}
 			/>
 		);
 	}
@@ -189,6 +220,11 @@ const AppBase = ({className, ...rest}) => {
 	return (
 		<div {...rest} className={classnames(className, css.app, viewer && ready ? css.viewing : css.browsing)}>
 			{content}
+			{update.status === 'available' && !viewer ? (
+				<div className={css.updateNotice} role="status">
+					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
+				</div>
+			) : null}
 		</div>
 	);
 };

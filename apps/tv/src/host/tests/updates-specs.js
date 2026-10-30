@@ -1,6 +1,6 @@
 import {checkUpdates, selectUpdate} from '../updates';
 
-const release = (tag, extra = {}) => ({tag_name: tag, draft: false, assets: [{name: 'okuyuki.ipk', state: 'uploaded'}], ...extra});
+const release = (tag, extra = {}) => ({['tag_name']: tag, draft: false, assets: [{name: 'okuyuki.ipk', state: 'uploaded'}], ...extra});
 
 test('finds the newest available IPK, including prereleases', () => {
 	expect(selectUpdate([release('v0.1.10-alpha.1'), release('v0.1.9'), release('v0.2.0', {draft: true})], '0.1.8'))
