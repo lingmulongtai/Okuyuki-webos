@@ -4,10 +4,14 @@ on:
     tags: ['v*']
 permissions:
   contents: read
+concurrency:
+  group: webos-preview-release
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    environment: github-pages
     permissions:
       contents: write
     steps:
@@ -25,12 +29,22 @@ jobs:
       - run: npm ci
       - run: npm run tv:install
       - run: npm run tv:update-test
+      - run: npm run tv:self-update-test
       - run: npm run tv:lint
       - run: npm run tv:test
         env:
           CI: '1'
       - run: npm run tv:build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run tv:self-update-browser-test
       - run: npm run tv:package
+      - name: Sign compatible runtime update
+        env:
+          OKUYUKI_TV_UPDATE_PRIVATE_KEY: ${{ secrets.OKUYUKI_TV_UPDATE_PRIVATE_KEY }}
+        run: node tools/self-update/publish.mjs
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: pages
       - name: Verify package and create checksums
         run: |
           version=$(node -p "require('./apps/tv/webos-meta/appinfo.json').version")
@@ -52,3 +66,17 @@ jobs:
           name: webos-release-validation
           path: dist/
           retention-days: 14
+  deploy-runtime:
+    needs: release
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+      actions: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy signed runtime
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
