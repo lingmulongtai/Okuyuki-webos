@@ -6,7 +6,7 @@ import appInfo from '../../webos-meta/appinfo.json';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
 import {packageVersion} from '../host/runtime-status';
-import {checkUpdates} from '../host/updates';
+import {checkUpdates, isReleaseNewer} from '../host/updates';
 import {deviceInfo, exitApp, launchParams, onLaunch} from '../platform/webos';
 import {Connection} from '../state/connection';
 import {Library} from '../state/library';
@@ -59,49 +59,63 @@ const AppBase = ({className, ...rest}) => {
 		window.dispatchEvent(new Event('okuyuki-runtime-started'));
 	}, []);
 	const updateRequest = useRef(null);
-	const checkForUpdates = useCallback(async () => {
-		if (updateRequest.current) return;
-		const controller = new AbortController();
-		updateRequest.current = controller;
-		const timeout = setTimeout(() => controller.abort(), 15000);
-		setUpdate({status: 'checking'});
-		setRuntimeStatus({status: 'checking'});
-		try {
-			const runtime = typeof window.okuyukiCheckRuntimeUpdate === 'function' ? window.okuyukiCheckRuntimeUpdate() : Promise.resolve({status: 'unavailable'});
-			const [release, contentResult] = await Promise.allSettled([checkUpdates(installedVersion, controller.signal), runtime]);
-			if (updateRequest.current === controller) {
-				let releaseState = {status: 'error'};
-				if (release.status === 'fulfilled') releaseState = release.value ? {status: 'available', version: release.value.version} : {status: 'current'};
-				setUpdate(releaseState);
-				setRuntimeStatus(contentResult.status === 'fulfilled' ? contentResult.value : {status: 'error'});
-			}
-		} catch (error) {
-			if (updateRequest.current === controller) {
-				setUpdate({status: 'error'});
-				setRuntimeStatus({status: 'error'});
-			}
-		} finally {
-			clearTimeout(timeout);
-			if (updateRequest.current === controller) updateRequest.current = null;
+	const runtimeRequest = useRef(null);
+	const checkForUpdates = useCallback(() => {
+		if (!updateRequest.current) {
+			const controller = new AbortController();
+			updateRequest.current = controller;
+			const timeout = setTimeout(() => controller.abort(), 15000);
+			setUpdate({status: 'checking'});
+			checkUpdates(installedVersion, controller.signal).then((found) => {
+				if (updateRequest.current === controller) setUpdate(found ? {status: 'available', version: found.version} : {status: 'current'});
+			}).catch(() => {
+				if (updateRequest.current === controller) setUpdate({status: 'error'});
+			}).finally(() => {
+				clearTimeout(timeout);
+				if (updateRequest.current === controller) updateRequest.current = null;
+			});
+		}
+		if (!runtimeRequest.current) {
+			const request = {};
+			runtimeRequest.current = request;
+			setRuntimeStatus({status: 'checking'});
+			Promise.resolve().then(() => typeof window.okuyukiCheckRuntimeUpdate === 'function' ? window.okuyukiCheckRuntimeUpdate() : {status: 'unavailable'}).then((result) => {
+				if (runtimeRequest.current === request) setRuntimeStatus(result);
+			}).catch(() => {
+				if (runtimeRequest.current === request) setRuntimeStatus({status: 'error'});
+			}).finally(() => {
+				if (runtimeRequest.current === request) runtimeRequest.current = null;
+			});
 		}
 	}, [installedVersion]);
 	useEffect(() => {
-		checkForUpdates();
+		let active = true;
+		Promise.resolve().then(() => {
+			if (active) checkForUpdates();
+		});
 		const timer = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
 		return () => {
+			active = false;
 			clearInterval(timer);
 			if (updateRequest.current) updateRequest.current.abort();
 			updateRequest.current = null;
+			runtimeRequest.current = null;
 		};
 	}, [checkForUpdates]);
 	useEffect(() => {
+		let active = true;
 		const onRuntimeReady = (event) => {
 			setRuntimeUpdate(event.detail);
 			setRuntimeStatus({status: 'ready', version: event.detail});
 		};
 		window.addEventListener('okuyuki-runtime-ready', onRuntimeReady);
-		if (window.okuyukiRuntimeUpdateReady) setRuntimeUpdate(window.okuyukiRuntimeUpdateReady);
-		return () => window.removeEventListener('okuyuki-runtime-ready', onRuntimeReady);
+		Promise.resolve().then(() => {
+			if (active && window.okuyukiRuntimeUpdateReady) onRuntimeReady({detail: window.okuyukiRuntimeUpdateReady});
+		});
+		return () => {
+			active = false;
+			window.removeEventListener('okuyuki-runtime-ready', onRuntimeReady);
+		};
 	}, []);
 	// {session, list: Item[] | null (null: the library's current list), index, mode: 'photo' | 'video', fromGrid}
 	const [viewerState, setViewer] = useState(null);
@@ -257,7 +271,7 @@ const AppBase = ({className, ...rest}) => {
 					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
 				</div>
 			) : null}
-			{!runtimeUpdate && update.status === 'available' && !viewer ? (
+			{!runtimeUpdate && runtimeStatus.status !== 'checking' && runtimeStatus.status !== 'ready' && update.status === 'available' && isReleaseNewer(update.version, runtimeVersion) && !viewer ? (
 				<div className={css.updateNotice} role="status">
 					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
 				</div>

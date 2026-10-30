@@ -125,6 +125,47 @@ test('checks standalone updates before pairing and reports compatibility', async
 	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
 });
 
+test('shows the TV update result without waiting for a slow IPK check', async ({ page }) => {
+	let slow = false;
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', async route => {
+		if (slow) await new Promise(resolve => setTimeout(resolve, 3000));
+		await route.fulfill({status: slow ? 503 : 200, headers: {'access-control-allow-origin': '*'}, json: []});
+	});
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'ready', version: '0.2.0'});
+	});
+	slow = true;
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
+});
+
+test('does not suggest a PC while a standalone update is being checked', async ({ page }) => {
+	let available = false;
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({
+		status: 200, headers: {'access-control-allow-origin': '*'},
+		json: available ? [{tag_name: 'v0.2.0', draft: false, assets: [{name: 'com.okuyuki.tv_0.2.0_all.ipk', state: 'uploaded'}]}] : []
+	}));
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		const tv = window as unknown as Record<string, unknown>;
+		tv.okuyukiCheckRuntimeUpdate = () => new Promise(resolve => { tv.finishRuntimeCheck = resolve; });
+	});
+	available = true;
+	const release = page.waitForResponse(response => response.url().startsWith('https://api.github.com/'));
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await release;
+	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
+	await expect(page.getByRole('status').filter({hasText: 'PC で github.com'})).toHaveCount(0);
+	await page.evaluate(() => {
+		window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: '0.2.0'}));
+		((window as unknown as Record<string, unknown>).finishRuntimeCheck as (value: unknown) => void)({status: 'ready', version: '0.2.0'});
+	});
+	await expect(page.getByRole('status')).toContainText('0.2.0 の更新を保存');
+});
+
 test('pairs with the phone and shows its library', async ({ page, request }) => {
 	const errors = trackErrors(page);
 	await launch(page);
