@@ -159,6 +159,9 @@ test('keeps a saved update visible when a later check fails', async ({ page }) =
 	await expect(page.getByTestId('runtime-status')).toContainText('確認できません');
 	await expect(page.getByRole('status')).toContainText('0.2.0 の更新を保存');
 	await expect(page.getByRole('button', {name: '今すぐ適用'})).toBeVisible();
+	await page.getByRole('button', {name: 'つなぐ', exact: true}).focus();
+	await page.keyboard.press('ArrowDown');
+	await expect(page.getByRole('button', {name: '今すぐ適用'})).toBeFocused();
 	await screenshot(page, 'tv-update-ready');
 });
 
