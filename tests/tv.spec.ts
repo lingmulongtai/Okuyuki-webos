@@ -161,7 +161,11 @@ test('keeps a saved update visible when a later check fails', async ({ page }) =
 });
 
 test('retries a check after connectivity returns while a check is in progress', async ({ page }) => {
-	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	let slow = false;
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', async route => {
+		if (slow) await new Promise(resolve => setTimeout(resolve, 3000));
+		await route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []});
+	});
 	await launch(page, null);
 	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
 	await page.evaluate(() => {
@@ -173,13 +177,14 @@ test('retries a check after connectivity returns while a check is in progress', 
 			return Promise.resolve({status: 'ready', version: '0.2.0'});
 		};
 	});
+	slow = true;
 	await page.getByRole('button', {name: '更新を確認'}).click();
 	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
 	await page.evaluate(() => {
 		window.dispatchEvent(new Event('online'));
 		((window as unknown as Record<string, unknown>).finishOfflineCheck as (value: unknown) => void)({status: 'error'});
 	});
-	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
 });
 
 test('does not suggest a PC while a standalone update is being checked', async ({ page }) => {

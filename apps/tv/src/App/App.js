@@ -60,16 +60,11 @@ const AppBase = ({className, ...rest}) => {
 	}, []);
 	const updateRequest = useRef(null);
 	const runtimeRequest = useRef(null);
-	const retryPending = useRef(false);
+	const retryRelease = useRef(false);
+	const retryRuntime = useRef(false);
 	const retryCheck = useRef(null);
-	const checkForUpdates = useCallback(() => {
-		const retryIfIdle = () => {
-			if (retryPending.current && !updateRequest.current && !runtimeRequest.current && retryCheck.current) {
-				retryPending.current = false;
-				retryCheck.current();
-			}
-		};
-		if (!updateRequest.current) {
+	const checkForUpdates = useCallback((channel) => {
+		if (channel !== 'runtime' && !updateRequest.current) {
 			const controller = new AbortController();
 			updateRequest.current = controller;
 			const timeout = setTimeout(() => controller.abort(), 15000);
@@ -82,11 +77,14 @@ const AppBase = ({className, ...rest}) => {
 				clearTimeout(timeout);
 				if (updateRequest.current === controller) {
 					updateRequest.current = null;
-					retryIfIdle();
+					if (retryRelease.current && retryCheck.current) {
+						retryRelease.current = false;
+						retryCheck.current('release');
+					}
 				}
 			});
 		}
-		if (!runtimeRequest.current) {
+		if (channel !== 'release' && !runtimeRequest.current) {
 			const request = {};
 			runtimeRequest.current = request;
 			setRuntimeStatus({status: 'checking'});
@@ -97,7 +95,10 @@ const AppBase = ({className, ...rest}) => {
 			}).finally(() => {
 				if (runtimeRequest.current === request) {
 					runtimeRequest.current = null;
-					retryIfIdle();
+					if (retryRuntime.current && retryCheck.current) {
+						retryRuntime.current = false;
+						retryCheck.current('runtime');
+					}
 				}
 			});
 		}
@@ -107,7 +108,8 @@ const AppBase = ({className, ...rest}) => {
 		let lastForegroundCheck = 0;
 		retryCheck.current = checkForUpdates;
 		const onReconnect = () => {
-			if (updateRequest.current || runtimeRequest.current) retryPending.current = true;
+			if (updateRequest.current) retryRelease.current = true;
+			if (runtimeRequest.current) retryRuntime.current = true;
 			checkForUpdates();
 		};
 		const onForeground = () => {
@@ -125,7 +127,8 @@ const AppBase = ({className, ...rest}) => {
 			active = false;
 			window.removeEventListener('online', onReconnect);
 			document.removeEventListener('visibilitychange', onForeground);
-			retryPending.current = false;
+			retryRelease.current = false;
+			retryRuntime.current = false;
 			retryCheck.current = null;
 			clearInterval(timer);
 			if (updateRequest.current) updateRequest.current.abort();
