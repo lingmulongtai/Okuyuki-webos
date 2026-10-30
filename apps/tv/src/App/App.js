@@ -60,7 +60,15 @@ const AppBase = ({className, ...rest}) => {
 	}, []);
 	const updateRequest = useRef(null);
 	const runtimeRequest = useRef(null);
+	const retryPending = useRef(false);
+	const retryCheck = useRef(null);
 	const checkForUpdates = useCallback(() => {
+		const retryIfIdle = () => {
+			if (retryPending.current && !updateRequest.current && !runtimeRequest.current && retryCheck.current) {
+				retryPending.current = false;
+				retryCheck.current();
+			}
+		};
 		if (!updateRequest.current) {
 			const controller = new AbortController();
 			updateRequest.current = controller;
@@ -72,7 +80,10 @@ const AppBase = ({className, ...rest}) => {
 				if (updateRequest.current === controller) setUpdate({status: 'error'});
 			}).finally(() => {
 				clearTimeout(timeout);
-				if (updateRequest.current === controller) updateRequest.current = null;
+				if (updateRequest.current === controller) {
+					updateRequest.current = null;
+					retryIfIdle();
+				}
 			});
 		}
 		if (!runtimeRequest.current) {
@@ -84,18 +95,38 @@ const AppBase = ({className, ...rest}) => {
 			}).catch(() => {
 				if (runtimeRequest.current === request) setRuntimeStatus({status: 'error'});
 			}).finally(() => {
-				if (runtimeRequest.current === request) runtimeRequest.current = null;
+				if (runtimeRequest.current === request) {
+					runtimeRequest.current = null;
+					retryIfIdle();
+				}
 			});
 		}
 	}, [installedVersion]);
 	useEffect(() => {
 		let active = true;
+		let lastForegroundCheck = 0;
+		retryCheck.current = checkForUpdates;
+		const onReconnect = () => {
+			if (updateRequest.current || runtimeRequest.current) retryPending.current = true;
+			checkForUpdates();
+		};
+		const onForeground = () => {
+			if (document.visibilityState !== 'visible' || Date.now() - lastForegroundCheck < 60000) return;
+			lastForegroundCheck = Date.now();
+			onReconnect();
+		};
+		window.addEventListener('online', onReconnect);
+		document.addEventListener('visibilitychange', onForeground);
 		Promise.resolve().then(() => {
 			if (active) checkForUpdates();
 		});
 		const timer = setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
 		return () => {
 			active = false;
+			window.removeEventListener('online', onReconnect);
+			document.removeEventListener('visibilitychange', onForeground);
+			retryPending.current = false;
+			retryCheck.current = null;
 			clearInterval(timer);
 			if (updateRequest.current) updateRequest.current.abort();
 			updateRequest.current = null;
