@@ -130,7 +130,14 @@ const TileBase = ({className, client, index, item, nearEnd, onLoadMore, onOpen, 
 
 const Tile = Spottable(TileBase);
 
-const Settings = ({onClose, onDisconnect, onSettings, phone, settings}) => {
+function updateMessage (update) {
+	if (update.status === 'checking') return '更新を確認中…';
+	if (update.status === 'error') return '更新を確認できませんでした。';
+	if (update.status === 'available') return '新しいバージョン ' + update.version + ' があります。';
+	return '最新版です。';
+}
+
+const Settings = ({onClose, onDisconnect, onSettings, onUpdateCheck, phone, settings, update}) => {
 	const toggleBestQuality = useCallback(() => {
 		onSettings({...settings, bestQuality: !settings.bestQuality});
 	}, [onSettings, settings]);
@@ -165,6 +172,9 @@ const Settings = ({onClose, onDisconnect, onSettings, phone, settings}) => {
 			<section className={css.group}>
 				<h3 className={css.groupTitle}>このアプリについて</h3>
 				<p className={css.note}>{'Okuyuki TV ' + appInfo.version}</p>
+				<p className={css.note}>{updateMessage(update)}</p>
+				<Action onClick={onUpdateCheck}>更新を確認</Action>
+				<p className={css.note}>開発版の更新は PC の開発者ツールからインストールします。</p>
 			</section>
 		</div>
 	);
@@ -180,9 +190,11 @@ const LibraryView = ({
 	onLoadMore,
 	onOpen,
 	onSettings,
+	onUpdateCheck,
 	phone,
 	sessionVersion,
-	settings
+	settings,
+	update
 }) => {
 	const list = library.lists[library.filter];
 	const view = useRef(null);
@@ -288,8 +300,10 @@ const LibraryView = ({
 					onClose={closeSettings}
 					onDisconnect={onDisconnect}
 					onSettings={onSettings}
+					onUpdateCheck={onUpdateCheck}
 					phone={phone}
 					settings={settings}
+					update={update}
 				/>
 			</Popup>
 		</div>

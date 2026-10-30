@@ -94,6 +94,19 @@ test.beforeEach(async ({ request }) => {
 	await mock(request, 'reset');
 });
 
+test('announces a published update before connecting a phone', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', async (route) => {
+		await route.fulfill({
+			status: 200,
+			headers: { 'access-control-allow-origin': '*' },
+			json: [{ tag_name: 'v0.2.0', draft: false, assets: [{ name: 'com.okuyuki.tv_0.2.0_all.ipk', state: 'uploaded' }] }]
+		});
+	});
+	await launch(page, null);
+	await expect(page.getByRole('status')).toContainText('Okuyuki TV 0.2.0');
+	await expect(page.getByRole('status')).toContainText('PC');
+});
+
 test('pairs with the phone and shows its library', async ({ page, request }) => {
 	const errors = trackErrors(page);
 	await launch(page);
@@ -132,9 +145,14 @@ test('filters the library', async ({ page, request }) => {
 test('loads more of the library while scrolling', async ({ page, request }) => {
 	await openLibrary(page, request);
 	await page.locator('[data-item-id]').first().hover();
-	for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 1200);
 	// The oldest item only exists on the third page.
-	await expect(page.locator('[data-item-id="1000001"]')).toBeAttached({ timeout: 20_000 });
+	const oldest = page.locator('[data-item-id="1000001"]');
+	// Allow each page to arrive before continuing through the virtualized list.
+	for (let i = 0; i < 30 && !(await oldest.count()); i++) {
+		await page.mouse.wheel(0, 1200);
+		await page.waitForTimeout(100);
+	}
+	await expect(oldest).toBeAttached({ timeout: 20_000 });
 });
 
 test('shows a photo, then swaps in the 4K still', async ({ page, request }) => {
