@@ -44,7 +44,7 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await page.waitForFunction(() => window.okuyukiRuntimeUpdateReady === '0.1.2');
         const previousNavigations = navigations;
         const releaseCheck = page.waitForResponse(response => response.url().startsWith('https://api.github.com/'));
-        await page.reload();
+        await page.getByRole('button', {name: '今すぐ適用'}).click();
         await releaseCheck;
         try {
             await page.waitForFunction(() => window.okuyukiRuntimeVersion === '0.1.2');
