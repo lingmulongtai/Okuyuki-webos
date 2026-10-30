@@ -1,5 +1,16 @@
+import {isReleaseNewer} from './updates';
+
 export function packageVersion (config, fallback) {
 	return config && typeof config.version === 'string' ? config.version : fallback;
+}
+
+export function releaseNotice (release, runtime, runtimeVersion, pendingVersion) {
+	if (pendingVersion || release.status !== 'available' || !isReleaseNewer(release.version, runtimeVersion) || runtime.status === 'checking' || runtime.status === 'ready') return null;
+	const prefix = 'Okuyuki TV ' + release.version + ' が公開されました。';
+	if (runtime.status === 'incompatible') return prefix + 'この更新には PC からの IPK 再導入が必要です。';
+	if (runtime.status === 'unavailable') return prefix + 'テレビ単体の更新を利用できないため、PC から IPK を導入できます。';
+	if (runtime.status === 'error') return prefix + 'テレビのインターネット接続を確認して、更新を再確認してください。';
+	return prefix + 'テレビ単体の更新を後でもう一度確認してください。';
 }
 
 export function runtimeMessage (update) {
@@ -12,3 +23,4 @@ export function runtimeMessage (update) {
 		default: return 'テレビ単体の更新を確認できませんでした。';
 	}
 }
+

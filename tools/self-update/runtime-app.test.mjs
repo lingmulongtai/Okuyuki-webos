@@ -42,10 +42,13 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('適用済み'));
         assert.equal(await page.evaluate(() => window.okuyukiUpdateConfig.version), '0.1.1');
         assert.match(await page.locator('#root').innerText(), /スマホ|接続/);
-        assert.doesNotMatch(await page.locator('body').innerText(), /PC で github.com/);
+        assert.doesNotMatch(await page.locator('body').innerText(), /IPK 再導入が必要/);
         release = 'v0.1.4-alpha.1-preview';
         await page.reload();
-        await page.getByRole('status').filter({hasText: 'PC で github.com'}).waitFor();
+        await page.getByRole('status').filter({hasText: '後でもう一度確認'}).waitFor();
+        await page.evaluate(() => { window.okuyukiCheckRuntimeUpdate = async () => ({status: 'incompatible'}); });
+        await page.getByRole('button', {name: '更新を確認'}).click();
+        await page.getByRole('status').filter({hasText: 'IPK 再導入が必要'}).waitFor();
         assert.equal(await page.evaluate(() => location.protocol), 'file:');
         assert.deepEqual(errors, []);
         await context.close();

@@ -104,6 +104,11 @@ test('announces a published update before connecting a phone', async ({ page }) 
 		});
 	});
 	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'incompatible'});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
 	await expect(page.getByRole('status')).toContainText('Okuyuki TV 0.2.0');
 	await expect(page.getByRole('status')).toContainText('PC');
 });
@@ -158,7 +163,7 @@ test('does not suggest a PC while a standalone update is being checked', async (
 	await page.getByRole('button', {name: '更新を確認'}).click();
 	await release;
 	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
-	await expect(page.getByRole('status').filter({hasText: 'PC で github.com'})).toHaveCount(0);
+	await expect(page.getByRole('status').filter({hasText: 'PC'})).toHaveCount(0);
 	await page.evaluate(() => {
 		window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: '0.2.0'}));
 		((window as unknown as Record<string, unknown>).finishRuntimeCheck as (value: unknown) => void)({status: 'ready', version: '0.2.0'});

@@ -5,8 +5,8 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import appInfo from '../../webos-meta/appinfo.json';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
-import {packageVersion} from '../host/runtime-status';
-import {checkUpdates, isReleaseNewer} from '../host/updates';
+import {packageVersion, releaseNotice} from '../host/runtime-status';
+import {checkUpdates} from '../host/updates';
 import {deviceInfo, exitApp, launchParams, onLaunch} from '../platform/webos';
 import {Connection} from '../state/connection';
 import {Library} from '../state/library';
@@ -263,6 +263,7 @@ const AppBase = ({className, ...rest}) => {
 		);
 	}
 
+	const updateNotice = releaseNotice(update, runtimeStatus, runtimeVersion, runtimeUpdate);
 	return (
 		<div {...rest} className={classnames(className, css.app, viewer && ready ? css.viewing : css.browsing)}>
 			{content}
@@ -271,9 +272,9 @@ const AppBase = ({className, ...rest}) => {
 					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
 				</div>
 			) : null}
-			{!runtimeUpdate && runtimeStatus.status !== 'checking' && runtimeStatus.status !== 'ready' && update.status === 'available' && isReleaseNewer(update.version, runtimeVersion) && !viewer ? (
+			{updateNotice && !viewer ? (
 				<div className={css.updateNotice} role="status">
-					{'Okuyuki TV ' + update.version + ' が公開されました。PC で github.com/lingmulongtai/Okuyuki-webos/releases を開いて更新してください。'}
+					{updateNotice}
 				</div>
 			) : null}
 		</div>
