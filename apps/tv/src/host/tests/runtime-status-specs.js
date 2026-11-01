@@ -9,7 +9,7 @@ test('only recommends reinstall when the TV updater reports incompatibility', ()
 	const release = {status: 'available', version: '0.1.5-alpha.1-preview'};
 	expect(releaseNotice(release, {status: 'checking'}, '0.1.4', null)).toBeNull();
 	expect(releaseNotice(release, {status: 'current'}, '0.1.4', null)).not.toContain('PC');
-	expect(releaseNotice(release, {status: 'error'}, '0.1.4', null)).toContain('接続');
+	expect(releaseNotice(release, {status: 'error'}, '0.1.4', null)).toContain('自動的に再確認');
 	expect(releaseNotice(release, {status: 'incompatible'}, '0.1.4', null)).toContain('IPK 再導入');
 	expect(releaseNotice(release, {status: 'current'}, '0.1.4', '0.1.5')).toBeNull();
 	expect(releaseNotice(release, {status: 'current'}, '0.1.5', null)).toBeNull();
@@ -24,6 +24,8 @@ test('keeps a saved update visible when a later check fails', () => {
 	const failed = runtimeMessage({status: 'error'}, '0.1.5');
 	expect(failed).toContain('0.1.5 を保存');
 	expect(failed).toContain('確認できません');
+	expect(failed).toContain('自動的に再確認');
+	expect(runtimeMessage({status: 'error'})).toContain('自動的に再確認');
 	expect(runtimeMessage({status: 'checking'}, '0.1.5')).toContain('確認中');
 	expect(runtimeMessage({status: 'incompatible'}, '0.1.5')).toContain('IPK 再導入');
 });

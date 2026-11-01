@@ -9,7 +9,7 @@ export function releaseNotice (release, runtime, runtimeVersion, pendingVersion)
 	const prefix = 'Okuyuki TV ' + release.version + ' が公開されました。';
 	if (runtime.status === 'incompatible') return prefix + 'この更新には PC からの IPK 再導入が必要です。';
 	if (runtime.status === 'unavailable') return prefix + 'テレビ単体の更新を利用できないため、PC から IPK を導入できます。';
-	if (runtime.status === 'error') return prefix + 'テレビのインターネット接続を確認して、更新を再確認してください。';
+	if (runtime.status === 'error') return prefix + '更新を確認できませんでした。後で自動的に再確認します。';
 	return prefix + 'テレビ単体の更新を後でもう一度確認してください。';
 }
 
@@ -17,7 +17,7 @@ export function runtimeMessage (update, pendingVersion) {
 	if (pendingVersion && update.status !== 'ready') {
 		const saved = '画面更新 ' + pendingVersion + ' を保存しました。次回起動時に適用します。';
 		if (update.status === 'checking') return saved + ' 新しい更新を確認中です。';
-		if (update.status === 'error') return saved + ' 最新の更新は確認できませんでした。';
+		if (update.status === 'error') return saved + ' 最新の更新は確認できませんでした。後で自動的に再確認します。';
 		if (update.status === 'incompatible') return saved + ' さらに新しい更新には IPK 再導入が必要です。';
 		return saved;
 	}
@@ -27,6 +27,6 @@ export function runtimeMessage (update, pendingVersion) {
 		case 'current': return '互換性のある画面更新は適用済みです。';
 		case 'incompatible': return '新しい更新には PC からの IPK 再導入が必要です。';
 		case 'unavailable': return 'テレビ単体の更新機能を利用できません。';
-		default: return 'テレビ単体の更新を確認できませんでした。';
+		default: return 'テレビ単体の更新を確認できませんでした。後で自動的に再確認します。';
 	}
 }
