@@ -134,7 +134,7 @@ const FOCUS = {
 	error: (input, phone) => (phone ? '[data-action="retry"]' : '.' + input)
 };
 
-const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck, runtimeStatus, runtimeUpdate}) => {
+const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck, runtimeStatus, runtimeUpdate, runtimeVersion, installedVersion}) => {
 	const typing = state.status === 'idle' || state.status === 'error';
 
 	useEffect(() => onBackKey(onExit), [onExit]);
@@ -168,6 +168,7 @@ const ConnectView = ({state, onCancel, onConnect, onExit, onRetry, onUpdateCheck
 					</p>
 					<Action onClick={onUpdateCheck}>更新を確認</Action>
 					<p className={css.note} data-testid="runtime-status">{runtimeMessage(runtimeStatus, runtimeUpdate)}</p>
+					<p className={css.note} data-testid="installed-versions">{'画面 ' + runtimeVersion + ' / インストール済み IPK ' + installedVersion}</p>
 				</div>
 			</div>
 			<div className={css.side}>
