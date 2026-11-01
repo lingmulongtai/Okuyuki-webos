@@ -12,8 +12,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: github-pages
-    permissions:
-      contents: write
+    outputs:
+      package-artifact: ${{ steps.release-artifact.outputs.artifact-id }}
+      pages-artifact: ${{ steps.names.outputs.pages }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
@@ -44,9 +45,25 @@ jobs:
           # Preserve standalone updates for the published 0.1.3 IPK.
           OKUYUKI_TV_REQUIRED_SHELL: 47e8b7a92732a79568e573a8ba0315af799bcc886a520b7b1e920427446f9ab2
         run: node tools/self-update/publish.mjs
+      - name: Reject a runtime downgrade
+        run: node tools/self-update/verify-public.mjs before
+      - name: Test the published 0.1.3 IPK with this update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p legacy-ipk
+          gh release download v0.1.3-alpha.1-preview --repo "$GITHUB_REPOSITORY" --pattern 'com.okuyuki.tv_0.1.3_all.ipk' --dir legacy-ipk
+          echo '77373738801833a0f26838fad98cf6b3d175b8743e7a999b96633040bce90182  legacy-ipk/com.okuyuki.tv_0.1.3_all.ipk' | sha256sum -c -
+          (cd legacy-ipk && ar x com.okuyuki.tv_0.1.3_all.ipk data.tar.gz && tar xzf data.tar.gz usr/palm/applications/com.okuyuki.tv)
+          OKUYUKI_TV_COMPAT_APP="$PWD/legacy-ipk/usr/palm/applications/com.okuyuki.tv" node --test tools/self-update/released-package.test.mjs
+      - name: Choose artifact names for this attempt
+        id: names
+        run: echo "pages=github-pages-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
+          name: ${{ steps.names.outputs.pages }}
           path: pages
+          retention-days: 14
       - name: Verify package and create checksums
         run: |
           version=$(node -p "require('./apps/tv/webos-meta/appinfo.json').version")
@@ -58,20 +75,29 @@ jobs:
           grep -Fx 'id: com.okuyuki.tv' dist/package-info.txt
           grep -Fx "version: $version" dist/package-info.txt
           (cd dist && sha256sum "com.okuyuki.tv_${version}_all.ipk" > SHA256SUMS.txt)
-      - name: Publish preview
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*.ipk dist/SHA256SUMS.txt dist/package-info.txt --verify-tag --prerelease --title "Okuyuki webOS $GITHUB_REF_NAME" --notes-file docs/RELEASE-NOTES.md
+      - name: Store the verified package and runtime
+        id: release-artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: webos-preview-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist/*.ipk
+            dist/SHA256SUMS.txt
+            dist/package-info.txt
+            pages/runtime.json
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
-          name: webos-release-validation
+          name: webos-release-validation-${{ github.run_id }}-${{ github.run_attempt }}
           path: dist/
           retention-days: 14
   deploy-runtime:
     needs: release
     runs-on: ubuntu-24.04
     permissions:
+      contents: read
       pages: write
       id-token: write
       actions: read
@@ -79,6 +105,39 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.release.outputs.package-artifact }}
+      - name: Recheck the published version immediately before deployment
+        run: node tools/self-update/verify-public.mjs before
       - name: Deploy signed runtime
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+        with:
+          artifact_name: ${{ needs.release.outputs.pages-artifact }}
+  publish:
+    needs: [release, deploy-runtime]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.release.outputs.package-artifact }}
+      - name: Verify the public runtime and package
+        run: |
+          node tools/self-update/verify-public.mjs after
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+      - name: Publish preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.ipk dist/SHA256SUMS.txt dist/package-info.txt --verify-tag --prerelease --title "Okuyuki webOS $GITHUB_REF_NAME" --notes-file docs/RELEASE-NOTES.md

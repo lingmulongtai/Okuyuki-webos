@@ -3,6 +3,7 @@ import classnames from 'classnames';
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 import appInfo from '../../webos-meta/appinfo.json';
+import Action from '../components/Action';
 import {detectCapabilities} from '../host/capabilities';
 import {lastPhone, loadSettings, saveSettings} from '../host/storage';
 import {packageVersion, releaseNotice} from '../host/runtime-status';
@@ -300,12 +301,14 @@ const AppBase = ({className, ...rest}) => {
 	}
 
 	const updateNotice = releaseNotice(update, runtimeStatus, runtimeVersion, runtimeUpdate);
+	const applyUpdate = useCallback(() => window.location.reload(), []);
 	return (
 		<div {...rest} className={classnames(className, css.app, viewer && ready ? css.viewing : css.browsing)}>
 			{content}
 			{runtimeUpdate && !viewer ? (
-				<div className={css.updateNotice} role="status">
-					{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}
+				<div className={css.updateNotice}>
+					<span role="status">{'Okuyuki TV ' + runtimeUpdate + ' の更新を保存しました。次にアプリを開くと適用します。'}</span>
+					<Action onClick={applyUpdate}>今すぐ適用</Action>
 				</div>
 			) : null}
 			{updateNotice && !viewer ? (
