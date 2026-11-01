@@ -114,13 +114,18 @@ const AppBase = ({className, ...rest}) => {
 			if (runtimeRequest.current) retryRuntime.current = true;
 			checkForUpdates();
 		};
-		const onForeground = () => {
-			if (document.visibilityState !== 'visible' || Date.now() - lastForegroundCheck < 60000) return;
+		const checkOnResume = () => {
+			if (Date.now() - lastForegroundCheck < 60000) return;
 			lastForegroundCheck = Date.now();
 			onReconnect();
 		};
+		const onForeground = () => {
+			if (document.visibilityState === 'visible') checkOnResume();
+		};
 		window.addEventListener('online', onReconnect);
 		document.addEventListener('visibilitychange', onForeground);
+		// webOS can send this before visibilityState changes to visible.
+		document.addEventListener('webOSRelaunch', checkOnResume, true);
 		Promise.resolve().then(() => {
 			if (active) checkForUpdates();
 		});
@@ -129,6 +134,7 @@ const AppBase = ({className, ...rest}) => {
 			active = false;
 			window.removeEventListener('online', onReconnect);
 			document.removeEventListener('visibilitychange', onForeground);
+			document.removeEventListener('webOSRelaunch', checkOnResume, true);
 			retryRelease.current = false;
 			retryRuntime.current = false;
 			retryCheck.current = null;

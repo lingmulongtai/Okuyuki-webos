@@ -192,6 +192,52 @@ test('retries a check after connectivity returns while a check is in progress', 
 	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
 });
 
+test('checks for updates on webOS relaunch before the app becomes visible', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		const tv = window as unknown as Record<string, unknown>;
+		tv.relaunchChecks = 0;
+		tv.okuyukiCheckRuntimeUpdate = () => {
+			tv.relaunchChecks = Number(tv.relaunchChecks) + 1;
+			return Promise.resolve({status: 'ready', version: '0.2.0'});
+		};
+		Object.defineProperty(document, 'visibilityState', {configurable: true, value: 'hidden'});
+		document.dispatchEvent(new CustomEvent('webOSRelaunch', {detail: {}}));
+	});
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+	await page.evaluate(() => {
+		Object.defineProperty(document, 'visibilityState', {configurable: true, value: 'visible'});
+		document.dispatchEvent(new Event('visibilitychange'));
+		document.dispatchEvent(new CustomEvent('webOSRelaunch', {detail: {}}));
+	});
+	await page.waitForTimeout(300);
+	expect(await page.evaluate(() => (window as unknown as Record<string, unknown>).relaunchChecks)).toBe(1);
+});
+
+test('rechecks after webOS relaunch during an in-flight update request', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		const tv = window as unknown as Record<string, unknown>;
+		let calls = 0;
+		tv.okuyukiCheckRuntimeUpdate = () => {
+			if (++calls === 1) return new Promise(resolve => { tv.finishRelaunchCheck = resolve; });
+			return Promise.resolve({status: 'ready', version: '0.2.0'});
+		};
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
+	await page.evaluate(() => {
+		Object.defineProperty(document, 'visibilityState', {configurable: true, value: 'hidden'});
+		document.dispatchEvent(new CustomEvent('webOSRelaunch', {detail: {}}));
+		((window as unknown as Record<string, unknown>).finishRelaunchCheck as (value: unknown) => void)({status: 'error'});
+	});
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
+});
+
 test('does not suggest a PC while a standalone update is being checked', async ({ page }) => {
 	let available = false;
 	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({
