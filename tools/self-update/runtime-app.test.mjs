@@ -73,6 +73,7 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         assert.equal(await page.evaluate(() => window.okuyukiRuntimeVersion), '0.1.2');
         assert.equal(navigations, previousNavigations + 1);
         assert.equal(await page.evaluate(() => window.okuyukiUpdateConfig.version), '0.1.1');
+        assert.equal(await page.getByTestId('installed-versions').textContent(), '画面 0.1.2 / インストール済み IPK 0.1.1');
         assert.match(await page.locator('#root').innerText(), /スマホ|接続/);
         assert.doesNotMatch(await page.locator('body').innerText(), /IPK 再導入が必要/);
         release = 'v0.1.4-alpha.1-preview';

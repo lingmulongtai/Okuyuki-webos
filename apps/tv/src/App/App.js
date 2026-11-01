@@ -299,6 +299,8 @@ const AppBase = ({className, ...rest}) => {
 				onUpdateCheck={checkForUpdates}
 				runtimeStatus={runtimeStatus}
 				runtimeUpdate={runtimeUpdate}
+				runtimeVersion={runtimeVersion}
+				installedVersion={installedVersion}
 			/>
 		);
 	} else if (viewer && items[viewer.index] && viewer.mode === 'video') {

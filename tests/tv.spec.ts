@@ -105,6 +105,10 @@ test('announces a published update before connecting a phone', async ({ page }) 
 	});
 	await launch(page, null);
 	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await expect(page.getByTestId('installed-versions')).toHaveText(`画面 ${appVersion} / インストール済み IPK ${appVersion}`);
+	const bounds = await page.getByTestId('installed-versions').boundingBox();
+	expect(bounds && bounds.y + bounds.height).toBeLessThanOrEqual(1080);
+	await screenshot(page, 'tv-update-versions');
 	await page.evaluate(() => {
 		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = async () => ({status: 'incompatible'});
 	});
