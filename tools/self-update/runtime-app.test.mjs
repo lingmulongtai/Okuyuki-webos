@@ -36,11 +36,14 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
             window.okuyukiTestStarts = 0;
             window.addEventListener('okuyuki-runtime-started', () => { window.okuyukiTestStarts++; });
         });
+        await page.clock.install();
         await page.goto(pathToFileURL(join(root, 'index.html')).href);
         await page.waitForFunction(() => document.getElementById('root').hasChildNodes());
         await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('確認できませんでした'));
         online = true;
-        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        // Restore the server without an online event: the app must retry on its own.
+        await page.clock.fastForward(30000);
+        await page.clock.resume();
         await page.waitForFunction(() => new Promise(resolveCandidate => {
             const request = indexedDB.open('okuyuki-tv-runtime', 1);
             request.onsuccess = () => { const get = request.result.transaction('state').objectStore('state').get('candidate'); get.onsuccess = () => resolveCandidate(!!get.result); };
@@ -75,6 +78,14 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         release = 'v0.1.4-alpha.1-preview';
         await page.reload();
         await page.getByRole('status').filter({hasText: '後でもう一度確認'}).waitFor();
+        await page.evaluate(() => {
+            window.okuyukiTestChecks = 0;
+            window.okuyukiCheckRuntimeUpdate = async () => ({status: ++window.okuyukiTestChecks === 1 ? 'error' : 'current'});
+        });
+        await page.getByRole('button', {name: '更新を確認'}).click();
+        await page.waitForFunction(() => window.okuyukiTestChecks === 1 && document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('確認できませんでした'));
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        await page.waitForFunction(() => window.okuyukiTestChecks === 2 && document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('適用済み'));
         await page.evaluate(() => { window.okuyukiCheckRuntimeUpdate = async () => ({status: 'incompatible'}); });
         await page.getByRole('button', {name: '更新を確認'}).click();
         await page.getByRole('status').filter({hasText: 'IPK 再導入が必要'}).waitFor();

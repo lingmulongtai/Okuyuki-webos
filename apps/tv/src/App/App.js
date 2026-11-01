@@ -64,6 +64,7 @@ const AppBase = ({className, ...rest}) => {
 	const retryRelease = useRef(false);
 	const retryRuntime = useRef(false);
 	const retryCheck = useRef(null);
+	const runtimeFailures = useRef(0);
 	const checkForUpdates = useCallback((channel) => {
 		if (channel !== 'runtime' && !updateRequest.current) {
 			const controller = new AbortController();
@@ -137,6 +138,19 @@ const AppBase = ({className, ...rest}) => {
 			runtimeRequest.current = null;
 		};
 	}, [checkForUpdates]);
+	// Transient failures do not always generate an online event. Retry with a
+	// bounded delay, while incompatible or unsupported shells wait for a normal check.
+	useEffect(() => {
+		let timer = null;
+		if (runtimeStatus.status === 'error') {
+			const delay = Math.min(30000 * (2 ** Math.min(runtimeFailures.current, 6)), 30 * 60 * 1000);
+			runtimeFailures.current += 1;
+			timer = setTimeout(() => checkForUpdates('runtime'), delay);
+		} else if (runtimeStatus.status !== 'checking') {
+			runtimeFailures.current = 0;
+		}
+		return () => clearTimeout(timer);
+	}, [checkForUpdates, runtimeStatus]);
 	useEffect(() => {
 		let active = true;
 		const onRuntimeReady = (event) => {
