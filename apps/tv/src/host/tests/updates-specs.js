@@ -1,4 +1,4 @@
-import {checkUpdates, isReleaseNewer, selectUpdate} from '../updates';
+import {checkUpdates, isReleaseNewer, rateLimitUntil, selectUpdate} from '../updates';
 
 const release = (tag, extra = {}) => ({['tag_name']: tag, draft: false, assets: [{name: 'okuyuki.ipk', state: 'uploaded'}], ...extra});
 
@@ -18,4 +18,14 @@ test('does not ask for an IPK when its runtime version is already active', () =>
 	expect(isReleaseNewer('0.1.4-alpha.1-preview', '0.1.4')).toBe(false);
 	expect(isReleaseNewer('0.1.5-alpha.1-preview', '0.1.4')).toBe(true);
 	expect(isReleaseNewer('invalid', '0.1.4')).toBe(false);
+});
+
+
+test('honors both rate limit headers and falls back conservatively', () => {
+	const now = 1700000000000;
+	const headers = (values) => ({get: (name) => values[name] || null});
+	expect(rateLimitUntil({headers: headers({'retry-after': '90'})}, now)).toBe(now + 90000);
+	expect(rateLimitUntil({headers: headers({'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1700000300'})}, now)).toBe(now + 300000);
+	expect(rateLimitUntil({headers: headers({'retry-after': '90', 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1700000300'})}, now)).toBe(now + 300000);
+	expect(rateLimitUntil({headers: headers({})}, now)).toBe(now + 3600000);
 });

@@ -65,6 +65,7 @@ const AppBase = ({className, ...rest}) => {
 	const retryRuntime = useRef(false);
 	const retryCheck = useRef(null);
 	const runtimeFailures = useRef(0);
+	const releaseFailures = useRef(0);
 	const checkForUpdates = useCallback((channel) => {
 		if (channel !== 'runtime' && !updateRequest.current) {
 			const controller = new AbortController();
@@ -73,8 +74,8 @@ const AppBase = ({className, ...rest}) => {
 			setUpdate({status: 'checking'});
 			checkUpdates(installedVersion, controller.signal).then((found) => {
 				if (updateRequest.current === controller) setUpdate(found ? {status: 'available', version: found.version} : {status: 'current'});
-			}).catch(() => {
-				if (updateRequest.current === controller) setUpdate({status: 'error'});
+			}).catch((error) => {
+				if (updateRequest.current === controller) setUpdate({status: 'error', retryAt: (error && error.retryAt) || 0});
 			}).finally(() => {
 				clearTimeout(timeout);
 				if (updateRequest.current === controller) {
@@ -114,13 +115,18 @@ const AppBase = ({className, ...rest}) => {
 			if (runtimeRequest.current) retryRuntime.current = true;
 			checkForUpdates();
 		};
-		const onForeground = () => {
-			if (document.visibilityState !== 'visible' || Date.now() - lastForegroundCheck < 60000) return;
+		const checkOnResume = () => {
+			if (Date.now() - lastForegroundCheck < 60000) return;
 			lastForegroundCheck = Date.now();
 			onReconnect();
 		};
+		const onForeground = () => {
+			if (document.visibilityState === 'visible') checkOnResume();
+		};
 		window.addEventListener('online', onReconnect);
 		document.addEventListener('visibilitychange', onForeground);
+		// webOS can send this before visibilityState changes to visible.
+		document.addEventListener('webOSRelaunch', checkOnResume, true);
 		Promise.resolve().then(() => {
 			if (active) checkForUpdates();
 		});
@@ -129,6 +135,7 @@ const AppBase = ({className, ...rest}) => {
 			active = false;
 			window.removeEventListener('online', onReconnect);
 			document.removeEventListener('visibilitychange', onForeground);
+			document.removeEventListener('webOSRelaunch', checkOnResume, true);
 			retryRelease.current = false;
 			retryRuntime.current = false;
 			retryCheck.current = null;
@@ -138,6 +145,25 @@ const AppBase = ({className, ...rest}) => {
 			runtimeRequest.current = null;
 		};
 	}, [checkForUpdates]);
+	// The release endpoint is independent of the signed runtime endpoint. Retry
+	// cautiously so a transient failure does not hide an IPK-only update for hours.
+	useEffect(() => {
+		let timer = null;
+		if (update.status === 'error') {
+			let delay;
+			if (update.retryAt) {
+				// A gated check is not another failed request and must not extend the limit.
+				delay = Math.min(Math.max(0, update.retryAt - Date.now()), 2147483647);
+			} else {
+				delay = Math.min(60000 * (2 ** Math.min(releaseFailures.current, 6)), 60 * 60 * 1000);
+				releaseFailures.current += 1;
+			}
+			timer = setTimeout(() => checkForUpdates('release'), delay);
+		} else if (update.status !== 'checking') {
+			releaseFailures.current = 0;
+		}
+		return () => clearTimeout(timer);
+	}, [checkForUpdates, update]);
 	// Transient failures do not always generate an online event. Retry with a
 	// bounded delay, while incompatible or unsupported shells wait for a normal check.
 	useEffect(() => {
