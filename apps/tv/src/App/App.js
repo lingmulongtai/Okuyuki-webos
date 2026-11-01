@@ -88,14 +88,20 @@ const AppBase = ({className, ...rest}) => {
 			});
 		}
 		if (channel !== 'release' && !runtimeRequest.current) {
-			const request = {};
+			const request = {watchdog: null};
 			runtimeRequest.current = request;
 			setRuntimeStatus({status: 'checking'});
+			// The installed shell shares one check Promise. A stuck check requires a
+			// restart, not another request that would reuse the same Promise.
+			request.watchdog = setTimeout(() => {
+				if (runtimeRequest.current === request) setRuntimeStatus({status: 'stalled'});
+			}, 45000);
 			Promise.resolve().then(() => typeof window.okuyukiCheckRuntimeUpdate === 'function' ? window.okuyukiCheckRuntimeUpdate() : {status: 'unavailable'}).then((result) => {
 				if (runtimeRequest.current === request) setRuntimeStatus(result);
 			}).catch(() => {
 				if (runtimeRequest.current === request) setRuntimeStatus({status: 'error'});
 			}).finally(() => {
+				clearTimeout(request.watchdog);
 				if (runtimeRequest.current === request) {
 					runtimeRequest.current = null;
 					if (retryRuntime.current && retryCheck.current) {
@@ -142,6 +148,7 @@ const AppBase = ({className, ...rest}) => {
 			clearInterval(timer);
 			if (updateRequest.current) updateRequest.current.abort();
 			updateRequest.current = null;
+			if (runtimeRequest.current) clearTimeout(runtimeRequest.current.watchdog);
 			runtimeRequest.current = null;
 		};
 	}, [checkForUpdates]);
@@ -180,6 +187,7 @@ const AppBase = ({className, ...rest}) => {
 	useEffect(() => {
 		let active = true;
 		const onRuntimeReady = (event) => {
+			if (event.type === 'okuyuki-runtime-ready' && runtimeRequest.current) clearTimeout(runtimeRequest.current.watchdog);
 			setRuntimeUpdate(event.detail);
 			setRuntimeStatus({status: 'ready', version: event.detail});
 		};
@@ -351,7 +359,13 @@ const AppBase = ({className, ...rest}) => {
 					<Action onClick={applyUpdate}>今すぐ適用</Action>
 				</div>
 			) : null}
-			{updateNotice && !viewer ? (
+			{!runtimeUpdate && !viewer && (runtimeStatus.status === 'stalled' || (runtimeStatus.status === 'unavailable' && window.okuyukiUpdateConfig)) ? (
+				<div className={css.updateNotice} data-testid="runtime-recovery">
+					<span role="status">更新を確認できません。アプリを再起動して再確認できます。</span>
+					<Action onClick={applyUpdate}>再起動して確認</Action>
+				</div>
+			) : null}
+			{updateNotice && !viewer && !(runtimeStatus.status === 'unavailable' && window.okuyukiUpdateConfig) ? (
 				<div className={css.updateNotice} role="status">
 					{updateNotice}
 				</div>

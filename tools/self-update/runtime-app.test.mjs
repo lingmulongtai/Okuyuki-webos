@@ -99,3 +99,44 @@ test('actual Enact app starts as a verified file-origin update with packaged ass
         await rm(absolute, {recursive: true, force: true});
     }
 });
+
+
+test('restart recovers a transient storage failure and stages the signed update', {timeout: 120000}, async () => {
+    const source = resolve('apps/tv/dist');
+    const root = await mkdtemp(join(tmpdir(), 'okuyuki-recovery-runtime-'));
+    const keys = generateKeyPairSync('ec', {namedCurve: 'prime256v1'});
+    const shell = await shellFingerprint(source);
+    const javascript = await readFile(join(source, 'main.js'));
+    const css = await readFile(join(source, 'main.css'));
+    const runtime = await readFile('apps/tv/bootstrap/runtime.js', 'utf8');
+    const config = {version: '0.1.1', shell, publicKey: keys.publicKey.export({format: 'der', type: 'spki'}).toString('base64'), updateUrl: 'https://updates.example/runtime.json'};
+    const envelope = createBundle({version: '0.1.2', shell, javascript, css}, keys.privateKey);
+    const browser = await chromium.launch({headless: true, args: ['--allow-file-access-from-files']});
+    try {
+        await cp(source, root, {recursive: true});
+        await writeFile(join(root, 'bootstrap.js'), `window.okuyukiUpdateConfig=${JSON.stringify(config)};\n${runtime}`);
+        const context = await browser.newContext({viewport: {width: 1920, height: 1080}});
+        await context.route(config.updateUrl, route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, body: envelope}));
+        await context.route('https://api.github.com/**', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+        const page = await context.newPage();
+        await page.addInitScript(() => {
+            if (!sessionStorage.getItem('okuyuki-test-storage-failed')) {
+                sessionStorage.setItem('okuyuki-test-storage-failed', '1');
+                Object.defineProperty(indexedDB, 'open', {configurable: true, value: () => { throw new Error('Simulated storage failure'); }});
+            }
+        });
+        await page.goto(pathToFileURL(join(root, 'index.html')).href);
+        await page.waitForFunction(() => document.querySelector('[data-testid="runtime-status"]')?.textContent.includes('テレビ単体の更新機能を利用できません'));
+        await page.evaluate(() => localStorage.setItem('pairing-test', 'preserved'));
+        await Promise.all([page.waitForEvent('load'), page.getByRole('button', {name: '再起動して確認'}).click()]);
+        await page.waitForFunction(() => window.okuyukiRuntimeUpdateReady === '0.1.2');
+        assert.equal(await page.evaluate(() => localStorage.getItem('pairing-test')), 'preserved');
+        await page.getByRole('button', {name: '今すぐ適用'}).waitFor();
+        await context.close();
+    } finally {
+        await browser.close();
+        const absolute = await realpath(root);
+        if (!absolute.startsWith(resolve(tmpdir()) + sep) || !absolute.split(sep).at(-1).startsWith('okuyuki-recovery-runtime-')) throw new Error('Unexpected temporary path');
+        await rm(absolute, {recursive: true, force: true});
+    }
+});

@@ -29,3 +29,12 @@ test('keeps a saved update visible when a later check fails', () => {
 	expect(runtimeMessage({status: 'checking'}, '0.1.5')).toContain('確認中');
 	expect(runtimeMessage({status: 'incompatible'}, '0.1.5')).toContain('IPK 再導入');
 });
+
+
+test('explains recovery for a stuck or unavailable update check', () => {
+	expect(runtimeMessage({status: 'stalled'})).toContain('再起動');
+	expect(runtimeMessage({status: 'unavailable'})).toContain('再起動');
+	expect(runtimeMessage({status: 'stalled'}, '0.1.9')).toContain('0.1.9 を保存');
+	expect(runtimeMessage({status: 'stalled'}, '0.1.9')).toContain('再起動');
+	expect(releaseNotice({status: 'available', version: '0.2.0'}, {status: 'stalled'}, '0.1.8', null)).toBeNull();
+});

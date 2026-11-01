@@ -192,6 +192,81 @@ test('retries a check after connectivity returns while a check is in progress', 
 	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存', {timeout: 1500});
 });
 
+test('offers restart for a stuck update check and clears it if the check finishes', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await page.clock.install();
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		const tv = window as unknown as Record<string, unknown>;
+		tv.okuyukiCheckRuntimeUpdate = () => new Promise(resolve => { tv.finishStuckCheck = resolve; });
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
+	await page.clock.fastForward(46000);
+	await page.clock.resume();
+	await expect(page.getByTestId('runtime-status')).toContainText('時間がかかっています');
+	await expect(page.getByRole('button', {name: '再起動して確認'})).toBeVisible();
+	await page.evaluate(() => ((window as unknown as Record<string, unknown>).finishStuckCheck as (value: unknown) => void)({status: 'current'}));
+	await expect(page.getByTestId('runtime-status')).toContainText('適用済み');
+	await expect(page.getByRole('button', {name: '再起動して確認'})).toHaveCount(0);
+});
+
+test('keeps a saved update actionable if a later check stalls', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await page.clock.install();
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: '0.2.0'}));
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = () => new Promise(() => {});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await page.clock.fastForward(46000);
+	await page.clock.resume();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+	await expect(page.getByTestId('runtime-status')).toContainText('再起動');
+	await expect(page.getByRole('button', {name: '今すぐ適用'})).toBeVisible();
+	await expect(page.getByRole('button', {name: '再起動して確認'})).toHaveCount(0);
+});
+
+test('does not report a timeout after an update has been saved', async ({ page }) => {
+	await page.route('https://api.github.com/repos/lingmulongtai/Okuyuki-webos/releases?*', route => route.fulfill({status: 200, headers: {'access-control-allow-origin': '*'}, json: []}));
+	await page.clock.install();
+	await launch(page, null);
+	await expect(page.getByTestId('runtime-status')).not.toContainText('確認中');
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = () => new Promise(() => {});
+	});
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await page.evaluate(() => window.dispatchEvent(new CustomEvent('okuyuki-runtime-ready', {detail: '0.2.0'})));
+	await page.clock.fastForward(46000);
+	await page.clock.resume();
+	await expect(page.getByTestId('runtime-status')).toContainText('0.2.0 を保存');
+	await expect(page.getByTestId('runtime-status')).not.toContainText('再起動してください');
+	await expect(page.getByRole('button', {name: '今すぐ適用'})).toBeVisible();
+});
+
+test('does not interrupt a photo when an update check stalls', async ({ page, request }) => {
+	await page.clock.install();
+	await openLibrary(page, request);
+	await page.evaluate(() => {
+		(window as unknown as Record<string, unknown>).okuyukiCheckRuntimeUpdate = () => new Promise(() => {});
+	});
+	await page.getByRole('button', {name: '設定'}).click();
+	await page.getByRole('button', {name: '更新を確認'}).click();
+	await expect(page.getByTestId('runtime-status')).toContainText('確認中');
+	await page.keyboard.press('Escape');
+	await gridItems(page).first().click();
+	await expect(viewer(page)).toBeVisible();
+	await page.clock.fastForward(46000);
+	await page.clock.resume();
+	await expect(viewer(page)).toBeVisible();
+	await expect(page.getByTestId('runtime-recovery')).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('button', {name: '再起動して確認'})).toBeVisible();
+});
+
 test('retries a failed release check and reports an IPK-only update', async ({ page }) => {
 	let available = false;
 	let checks = 0;
